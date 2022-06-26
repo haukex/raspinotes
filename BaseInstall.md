@@ -200,7 +200,7 @@ Basic Setup
 	
 	3. `sudo systemctl restart rsyslog`
 	
-	4. Can use `udplisten.pl -ma` from this repository to listen for the broadcasts.
+	4. Can use `udplisten.pl -ma` from <https://gitlab.igb-berlin.de/haukex/hgpstools> to listen for the broadcasts.
 
 5. **Mail**: Configure Postfix either as "Local only" or "Internet Site" as appropriate in the following steps:
 	
