@@ -15,12 +15,8 @@ a Raspberry Pi and Raspbian / Debian.
 
 Last tested:
 
-- May 2020 on a Raspberry Pi Zero W with Raspbian Buster Lite 2020-02-13
-- December 2020 on a Raspberry Pi Zero W with Raspberry Pi OS (32-bit) Lite 2020-12-02
-- January 2021 on a Raspberry Pi 3B with Raspberry Pi OS (32-bit) Lite 2020-12-02
-- May 2021 on a Raspberry Pi 3B+ with Raspberry Pi OS (32-bit) Lite 2021-03-04
-- September 2021 on a Raspberry Pi 3B+ with Rasperry Pi OS (32-bit) Lite 2021-05-07
 - May 2022 on a Raspberry Pi 3B+ with Raspberry Pi OS Lite (32-bit) 2022-04-04 (bullseye)
+- March 2023 on a Raspberry Pi 4 (2GB) with Raspberry Pi OS Lite 64-bit 2023-02-21 (bullseye)
 
 
 Basic Setup
@@ -76,7 +72,10 @@ Basic Setup
 		1. Prevent automatic resize of the root filesystem
 		   as per <https://raspberrypi.stackexchange.com/a/56623>:
 		
-			1. In `/boot/cmdline.txt`, remove `init=/usr/lib/raspi-config/init_resize.sh`
+			1. In `/boot/cmdline.txt`, remove `init=/usr/lib/raspi-config/init_resize.sh`,
+			   but if it says `init=/usr/lib/raspberrypi-sys-mods/firstboot` (newer versions
+			   of Raspbian), then that doesn't need to be removed, because that script will
+			   not attempt the resize if there is another partition after the root partition.
 			
 			2. In the RPi's root filesystem, delete
 			   `/etc/init.d/resize2fs_once` and `/etc/rc3.d/S01resize2fs_once`
@@ -89,6 +88,10 @@ Basic Setup
 		   `lsblk -o PARTUUID /dev/disk/by-label/data`. The entry might look like:
 		   `PARTUUID=9730496b-03  /data  ext4  defaults,noatime  0  2`
 		   where you should also do `sudo mkdir -v /data`. Then reboot.
+		   *Note:* Depending on the data being written, you may also want to add
+		   `sync` to the mount options for a little bit more protection against
+		   sudden power offs (make sure you understand the implications of this
+		   depending on the type of flash memory you're using).
 		
 		4. `sudo mkdir -v /data/pi`, `sudo chown pi:pi /data/pi`, and `ln -svnf /data/pi /home/pi/data`
 		
@@ -262,7 +265,7 @@ Basic Setup
 Author, Copyright, and License
 ------------------------------
 
-Copyright (c) 2016-2022 Hauke Dämpfling <haukex@zero-g.net>
+Copyright (c) 2016-2023 Hauke Dämpfling <haukex@zero-g.net>
 at the Leibniz Institute of Freshwater Ecology and Inland Fisheries (IGB),
 Berlin, Germany, <https://www.igb-berlin.de/>
 
