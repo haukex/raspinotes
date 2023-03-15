@@ -265,6 +265,9 @@ Basic Setup
 	
 	- Serial port: `sudo adduser pi dialout`, `stty -F /dev/ttyS0 19200 cs8 -parenb raw -crtscts -echo`, `cat /dev/ttyS0`
 	  (Also: `minicom -D/dev/ttyS0` and `screen /dev/ttyS0 19200`)
+	
+	- Making a backup of an SD card from another system (where `/dev/sdb` is the SD card):
+	  `sudo dd if=/dev/sdb | gzip -9 >backup.img.gz`
 
 
 Author, Copyright, and License
