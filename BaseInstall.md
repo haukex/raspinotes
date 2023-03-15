@@ -68,7 +68,7 @@ Basic Setup
 	
 	3. *Optional Procedure:* Protecting the SD card against wear and sudden power-offs
 	   by making root FS read-only ("overlay filesystem") with a writable data partition
-	
+		
 		1. Prevent automatic resize of the root filesystem
 		   as per <https://raspberrypi.stackexchange.com/a/56623>:
 		
@@ -84,41 +84,13 @@ Basic Setup
 		   desired size, e.g. 16GB, and then create a new ext4 partition covering
 		   the rest of the space on the SD card, label it e.g. `data`
 		
-		3. After booting, create an `/etc/fstab` entry, you can get the ID via
-		   `lsblk -o PARTUUID /dev/disk/by-label/data`. The entry might look like:
-		   `PARTUUID=9730496b-03  /data  ext4  defaults,noatime  0  2`
-		   where you should also do `sudo mkdir -v /data`. Then reboot.
-		   *Note:* Depending on the data being written, you may also want to add
-		   `sync` to the mount options for a little bit more protection against
-		   sudden power offs (make sure you understand the implications of this
-		   depending on the type of flash memory you're using).
-		
-		4. `sudo mkdir -v /data/pi`, `sudo chown pi:pi /data/pi`, and `ln -svnf /data/pi /home/pi/data`
-		
-		5. Note there is no point in setting up the "unattended upgrades" below,
+		3. The rest of the prodecure after booting is covered below.
+		   **Note** there is no point in setting up the "unattended upgrades" below,
 		   you'll have to do updates manually. Also, while `fail2ban` (below) will
 		   still generally work if the system isn't rebooted too often, note its
 		   data will *not* be persisted across reboots unless all of it (including
-		   the logs it uses) is placed on the `/data` partition.
-		
-		6. If setting up `postfix` and `alpine`, do this afterwards:
-			
-				sudo mkdir -v /data/spool
-				sudo systemctl stop postfix
-				ls -l /var/spool/mail  # => should normally be a symlink to ../mail !
-				sudo mv -v /var/mail /data/spool/mail
-				sudo mv -v /var/spool/postfix /data/spool/postfix
-				sudo ln -svf /data/spool/mail /var/
-				sudo ln -svf /data/spool/mail /var/spool/
-				sudo ln -svf /data/spool/postfix /var/spool/
-				sudo systemctl start postfix
-				mv -v ~/mail /data/pi
-				ln -svf /data/pi/mail ~
-		
-		7. Later, after completing the install, you can enable the "Overlay File System"
-		   in the "Performance Options" of `raspi-config`. Remember that if making changes
-		   that need to persist across reboots, you'll need to disable and re-enable this
-		   option, rebooting each time.
+		   the logs it uses) is placed on the `/data` partition - this is not (yet)
+		   covered in these instructions.
 	
 	3. Boot the Pi and log in with ssh user `pi`; you can make the login with this username
 	   automatic by putting the following in `~/.ssh/config` on your local machine:
@@ -241,7 +213,40 @@ Basic Setup
 	
 	5. Enable with `sudo dpkg-reconfigure --priority=low unattended-upgrades`
 
-7. **Miscellaneous**
+7. **Overlay Filesystem** (*optional*, continued from above!)
+
+	1. Create an `/etc/fstab` entry for the `data` partition, you can get the ID
+	   via `lsblk -o PARTUUID /dev/disk/by-label/data`. The entry might look like:
+	   `PARTUUID=9730496b-03  /data  ext4  defaults,noatime  0  2`
+	   where you should also do `sudo mkdir -v /data`. Then reboot.
+	   
+	   *Note:* Depending on the data being written, you may also want to add
+	   `sync` to the mount options for a little bit more protection against
+	   sudden power offs (make sure you understand the implications of this
+	   depending on the type of flash memory you're using).
+	
+	2. `sudo mkdir -v /data/pi`, `sudo chown pi:pi /data/pi`, and `ln -svnf /data/pi /home/pi/data`
+	
+	3. If you set up `postfix` and `alpine` above, do this:
+		
+			sudo mkdir -v /data/spool
+			sudo systemctl stop postfix
+			ls -l /var/spool/mail  # => should normally be a symlink to ../mail !
+			sudo mv -v /var/mail /data/spool/mail
+			sudo mv -v /var/spool/postfix /data/spool/postfix
+			sudo ln -svf /data/spool/mail /var/
+			sudo ln -svf /data/spool/mail /var/spool/
+			sudo ln -svf /data/spool/postfix /var/spool/
+			sudo systemctl start postfix
+			mv -v ~/mail /data/pi
+			ln -svf /data/pi/mail ~
+	
+	4. Later, after completing the install, you can enable the "Overlay File System"
+	   in the "Performance Options" of `raspi-config`. Remember that if making changes
+	   that need to persist across reboots, you'll need to disable and re-enable this
+	   option, rebooting each time.
+
+8. **Miscellaneous**
 
 	- For network time, `sudo apt-get install --no-install-recommends ntp` and edit `/etc/ntp.conf` as appropriate.
 	
