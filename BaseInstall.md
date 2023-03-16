@@ -43,6 +43,13 @@ Basic Setup
 					ssid="ssid"
 					psk="pass"
 				}
+		
+		4. Choose a password and set it up via:
+		   `echo "pi:$(openssl passwd -6)" >userconf.txt`
+		   (as per <http://rptl.io/newuser> for new releases of Raspbian)
+		   (if you don't do this and get a message referring to this URL on
+		   each SSH login, you can delete `/etc/ssh/sshd_config.d/rename_user.conf`
+		   to disable the message)
 	
 	2. On the `rootfs` partition:
 	
@@ -101,7 +108,7 @@ Basic Setup
 	
 	4. `sudo raspi-config`
 	
-		1. **Set a password**, and if not done above, the hostname
+		1. If not done above, **set a password** and the hostname
 		
 		2. Locales: Add needed locales (for me, `en_US.UTF-8` and `de_DE.UTF-8`),
 		   don't delete existing locales, set `C.UTF-8` as default
