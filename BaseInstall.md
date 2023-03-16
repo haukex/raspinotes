@@ -113,7 +113,7 @@ Basic Setup
 	
 	5. `sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get dist-upgrade -y && sudo apt-get autoremove -y && echo Done` (reboot afterwards is usually necessary)
 	
-	6. `sudo apt-get install --no-install-recommends ufw fail2ban vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc jq zip tofrodos`
+	6. `sudo apt-get install --no-install-recommends aptitude ufw fail2ban vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc jq zip tofrodos`
 	   (these is my preferred toolset on top of the Lite edition, you may modify this as you like)
 	
 	7. Misc.
