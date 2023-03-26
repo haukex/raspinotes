@@ -1,0 +1,12 @@
+name: Mirror this repo to IGB GitLab
+on: push
+jobs:
+  github-mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: git remote add dest1 https://haukex:${{ secrets.IGBGL_MIRROR_TOKEN }}@gitlab.igb-berlin.de/haukex/raspinotes.git
+      - run: git fetch dest1
+      - run: git push dest1
