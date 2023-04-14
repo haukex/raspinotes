@@ -6,7 +6,7 @@ These are my notes on setting up Raspberry Pis.
 Author, Copyright, and License
 ------------------------------
 
-Copyright (c) 2022 Hauke Dämpfling <haukex@zero-g.net>
+Copyright (c) 2022-2023 Hauke Dämpfling <haukex@zero-g.net>
 at the Leibniz Institute of Freshwater Ecology and Inland Fisheries (IGB),
 Berlin, Germany, <https://www.igb-berlin.de/>
 
