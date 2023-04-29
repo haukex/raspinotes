@@ -75,15 +75,15 @@ Basic Setup
 	
 	3. *Optional Procedure:* Protecting the SD card against wear and sudden power-offs
 	   by making root FS read-only ("overlay filesystem") with a writable data partition.
-	
-	**Note** there is no point in setting up the "unattended upgrades" below,
-	you'll have to do updates manually. Also, while `fail2ban` (below) will
-	still generally work if the system isn't rebooted too often, note its
-	data will *not* be persisted across reboots unless all of it (including
-	the logs it uses) is placed on the `/data` partition - this is not (yet)
-	covered in these instructions.
 		
-		1. Prevent automatic resize of the root filesystem
+		1. **Note** there is no point in setting up the "unattended upgrades" below,
+		   you'll have to do updates manually. Also, while `fail2ban` (below) will
+		   still generally work if the system isn't rebooted too often, note its
+		   data will *not* be persisted across reboots unless all of it (including
+		   the logs it uses) is placed on the `/data` partition - this is not (yet)
+		   covered in these instructions.
+		
+		2. Prevent automatic resize of the root filesystem
 		   as per <https://raspberrypi.stackexchange.com/a/56623>:
 		
 			1. In `/boot/cmdline.txt`, remove `init=/usr/lib/raspi-config/init_resize.sh`,
@@ -94,11 +94,11 @@ Basic Setup
 			2. In the RPi's root filesystem, delete
 			   `/etc/init.d/resize2fs_once` and `/etc/rc3.d/S01resize2fs_once`
 		
-		2. Using e.g. `gparted`, resize the root filesystem on the SD card to the
+		3. Using e.g. `gparted`, resize the root filesystem on the SD card to the
 		   desired size, e.g. 16GB, and then create a new ext4 partition covering
 		   the rest of the space on the SD card, label it e.g. `data`
 		
-		3. The rest of the prodecure after booting is covered below.
+		4. The rest of the prodecure after booting is covered below.
 	
 	3. Boot the Pi and log in with ssh user `pi`; you can make the login with this username
 	   automatic by putting the following in `~/.ssh/config` on your local machine:
