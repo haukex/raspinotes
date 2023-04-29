@@ -62,6 +62,7 @@ Basic Setup
 		   and (optionally generating a new SSH key for this) copy your public SSH key
 		   to `authorized_keys` in that directory, for example:
 			
+				cd /path/to/rootfs
 				sudo mkdir -vp home/pi/.ssh
 				sudo cp -v ~/.ssh/id_rsa.pub home/pi/.ssh/authorized_keys
 				sudo chmod -v 700 home/pi/.ssh
@@ -72,6 +73,17 @@ Basic Setup
 			
 				PermitRootLogin no
 				PasswordAuthentication no
+		
+		4. If you need to set up `cron` jobs before boot, like those described
+		   in the corresponding section below, that is possible as follows.
+		   *Note* that the format of the crontab file *must* be valid;
+		   after booting the RPi, always use `crontab -e` to edit the crontab.
+			
+				cd /path/to/rootfs
+				sudo vi var/spool/cron/crontabs/pi
+				# edit the file as necessary
+				sudo chmod -v 600 var/spool/cron/crontabs/pi
+				sudo chown -v `stat -c %u home/pi`:`stat -c %g var/spool/cron/crontabs` var/spool/cron/crontabs/pi
 	
 	3. *Optional Procedure:* Protecting the SD card against wear and sudden power-offs
 	   by making root FS read-only ("overlay filesystem") with a writable data partition.
