@@ -74,7 +74,14 @@ Basic Setup
 				PasswordAuthentication no
 	
 	3. *Optional Procedure:* Protecting the SD card against wear and sudden power-offs
-	   by making root FS read-only ("overlay filesystem") with a writable data partition
+	   by making root FS read-only ("overlay filesystem") with a writable data partition.
+	
+	**Note** there is no point in setting up the "unattended upgrades" below,
+	you'll have to do updates manually. Also, while `fail2ban` (below) will
+	still generally work if the system isn't rebooted too often, note its
+	data will *not* be persisted across reboots unless all of it (including
+	the logs it uses) is placed on the `/data` partition - this is not (yet)
+	covered in these instructions.
 		
 		1. Prevent automatic resize of the root filesystem
 		   as per <https://raspberrypi.stackexchange.com/a/56623>:
@@ -92,12 +99,6 @@ Basic Setup
 		   the rest of the space on the SD card, label it e.g. `data`
 		
 		3. The rest of the prodecure after booting is covered below.
-		   **Note** there is no point in setting up the "unattended upgrades" below,
-		   you'll have to do updates manually. Also, while `fail2ban` (below) will
-		   still generally work if the system isn't rebooted too often, note its
-		   data will *not* be persisted across reboots unless all of it (including
-		   the logs it uses) is placed on the `/data` partition - this is not (yet)
-		   covered in these instructions.
 	
 	3. Boot the Pi and log in with ssh user `pi`; you can make the login with this username
 	   automatic by putting the following in `~/.ssh/config` on your local machine:
@@ -268,7 +269,7 @@ Basic Setup
 		
 		2. When you connect to the RPi via SSH, use `ssh -R12333 pi@...`
 		
-		3. Then, commands that support it, you can use e.g. `ALL_PROXY=socks5h://localhost:12333 curl http://example.com`,
+		3. Then, with commands that support it, you can use e.g. `ALL_PROXY=socks5h://localhost:12333 curl http://example.com`,
 		   for other commands use e.g. `sudo proxychains4 -q apt-get update` or `proxychains4 -q cpanm ...`
 	
 	- Sometimes, on some WiFi nets, WiFi will stop working unless I reboot the Pi once in a while.
