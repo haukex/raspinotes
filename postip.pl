@@ -23,6 +23,7 @@ $sig =~ tr#+/#-_#;  # like Python's base64.urlsafe_b64encode
 #$sig =~ s/=+$//g;  # not actually needed, docs say there won't be padding
 
 my @cmd = ('curl','--silent','--max-time','5',
-        '--header','Content-Type: application/octet-stream',
-        '--data-raw',$sig,"$BASEURL$url",'--output','/dev/null');
+	'--fail','--fail-early','--show-error',
+	'--header','Content-Type: application/octet-stream',
+	'--data-raw',$sig,"$BASEURL$url",'--output','/dev/null');
 system(@cmd) and die "curl: \$?=$?, \$!=$!";
