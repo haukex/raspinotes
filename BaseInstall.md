@@ -183,6 +183,10 @@ Basic Setup
 	3. `sudo systemctl restart rsyslog`
 	
 	4. Can use `udplisten.py` from this repository to listen for the broadcasts.
+	
+	5. Alternative: You can use `postip.pl` from this repository in the `crontab` to send an
+	   HTTP request instead of a UDP packet; remember to use the full pathname to the script.
+	   TODO: The HMAC-SHA256 signature provided by the script can be used by the server to verify the authenticity.
 
 5. **Mail**: Configure Postfix either as "Local only" or "Internet Site" as appropriate in the following steps:
 	
