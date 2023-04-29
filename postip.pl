@@ -20,7 +20,7 @@ my $url = join '/', $host, @ips;
 
 my $sig = hmac_sha256_base64($url, $SECRET);
 $sig =~ tr#+/#-_#;  # like Python's base64.urlsafe_b64encode
-$sig =~ s/=+$//g;
+#$sig =~ s/=+$//g;  # not actually needed, docs say there won't be padding
 
 my @cmd = ('curl','--silent','--max-time','5',
         '--header','Content-Type: application/octet-stream',
