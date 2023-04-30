@@ -133,12 +133,14 @@ Basic Setup
 		3. If setting the keyboard layout setting fails (e.g. if no keyboard connected),
 		   edit `/etc/default/keyboard` and e.g. set `XKBLAYOUT="de"` and `XKBVARIANT="nodeadkeys"`
 		
-		4. All other options as appropriate
+		4. I prefer turning off predictable network i/f names
+		
+		5. All other options as appropriate
 	
-	3. `sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get dist-upgrade -y && sudo apt-get autoremove -y && echo Done` (reboot afterwards is usually necessary)
+	3. `sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get dist-upgrade -y && sudo apt-get autoremove -y && echo Done` (reboot afterward is usually necessary)
 	
 	4. `sudo apt-get install --no-install-recommends aptitude ufw fail2ban vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc jq zip tofrodos`
-	   (these is my preferred toolset on top of the Lite edition, you may modify this as you like)
+	   (these are my preferred toolset on top of the Lite edition, you may modify this as you like)
 	
 	5. Misc.
 	
@@ -270,7 +272,7 @@ Basic Setup
 			mv -v ~/mail /data/pi
 			ln -svf /data/pi/mail ~
 	
-	4. Later, after completing the install, you can enable the "Overlay File System"
+	4. Later, after completing the installation, you can enable the "Overlay File System"
 	   in the "Performance Options" of `raspi-config`. Remember that if making changes
 	   that need to persist across reboots, you'll need to disable and re-enable this
 	   option, rebooting each time.
@@ -289,7 +291,7 @@ Basic Setup
 		3. Then, with commands that support it, you can use e.g. `ALL_PROXY=socks5h://localhost:12333 curl http://example.com`,
 		   for other commands use e.g. `sudo proxychains4 -q apt-get update` or `proxychains4 -q cpanm ...`
 	
-	- Sometimes, on some WiFi nets, WiFi will stop working unless I reboot the Pi once in a while.
+	- Sometimes, on some Wi-Fi nets, Wi-Fi will stop working unless I reboot the Pi once in a while.
 	  This can be done via e.g. `sudo -i crontab -e`: `0 8 * * * /sbin/shutdown --reboot +5 2>/dev/null`
 	
 	- Serial port: `sudo adduser pi dialout`, `stty -F /dev/ttyS0 19200 cs8 -parenb raw -crtscts -echo`, `cat /dev/ttyS0`
