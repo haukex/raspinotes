@@ -113,15 +113,17 @@ Basic Setup
 		   the rest of the space on the SD card, label it e.g. `data`
 		
 		4. The rest of the prodecure after booting is covered below.
-	
-	3. Boot the Pi and log in with ssh user `pi`; you can make the login with this username
+
+2. **At First Boot Procedures**
+
+	1. Boot the Pi and log in with ssh user `pi`; you can make the login with this username
 	   automatic by putting the following in `~/.ssh/config` on your local machine:
 		
 			Host yourpihostname
 				User pi
 				IdentityFile ~/.ssh/id_rsa_yourprivkeyfile
 	
-	4. `sudo raspi-config`
+	2. `sudo raspi-config`
 	
 		1. If not done above, **set a password** and the hostname
 		
@@ -133,23 +135,23 @@ Basic Setup
 		
 		4. All other options as appropriate
 	
-	5. `sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get dist-upgrade -y && sudo apt-get autoremove -y && echo Done` (reboot afterwards is usually necessary)
+	3. `sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get dist-upgrade -y && sudo apt-get autoremove -y && echo Done` (reboot afterwards is usually necessary)
 	
-	6. `sudo apt-get install --no-install-recommends aptitude ufw fail2ban vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc jq zip tofrodos`
+	4. `sudo apt-get install --no-install-recommends aptitude ufw fail2ban vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc jq zip tofrodos`
 	   (these is my preferred toolset on top of the Lite edition, you may modify this as you like)
 	
-	7. Misc.
+	5. Misc.
 	
 		- `rm -vf /boot/wpa_supplicant.conf`
 		- `sudo adduser pi wireshark`
 		- `perl -Mlocal::lib >>~/.profile`
 		- Set up any files like `.bash_aliases`, `.vimrc`, etc.
 
-2. **UFW**: `sudo ufw allow OpenSSH && sudo ufw enable`
+3. **UFW**: `sudo ufw allow OpenSSH && sudo ufw enable`
 
 	- `sudo ufw logging off`, if logging messages fill up the syslog too much
 
-3. **fail2ban**
+4. **fail2ban**
 
 	1. `sudo cp -v /etc/fail2ban/jail.conf /etc/fail2ban/jail.local`
 	
@@ -183,7 +185,7 @@ Basic Setup
 		- `sudo zgrep Ban /var/log/fail2ban.log* | perl -wMstrict -Mvars=%x -nale '$x{$F[7]}++}{print "$_\t$x{$_}" for grep {$x{$_}>1} sort { $x{$b}<=>$x{$a} } keys %x'`
 		- `sudo ufw deny from ADDRESS comment 'too many failed login attempts'`
 
-4. **Crontab** to broadcast RPi's address and name
+5. **Crontab** to broadcast RPi's address and name
 
 	1. `crontab -e`
 		
@@ -203,7 +205,7 @@ Basic Setup
 	   HTTP request instead of a UDP packet; remember to use the full pathname to the script.
 	   TODO: The HMAC-SHA256 signature provided by the script can be used by the server to verify the authenticity.
 
-5. **Mail**: Configure Postfix either as "Local only" or "Internet Site" as appropriate in the following steps:
+6. **Mail**: Configure Postfix either as "Local only" or "Internet Site" as appropriate in the following steps:
 	
 		sudo apt-get install alpine postfix bsd-mailx
 		sudo vi /etc/postfix/main.cf
@@ -218,7 +220,7 @@ Basic Setup
 		alpine
 		# Configure "User Domain" and anything else as needed
 
-6. **Unattended Upgrades**
+7. **Unattended Upgrades**
 
 	1. `sudo apt-get install unattended-upgrades`
 	
@@ -239,7 +241,7 @@ Basic Setup
 	
 	5. Enable with `sudo dpkg-reconfigure --priority=low unattended-upgrades`
 
-7. **Overlay Filesystem** (*optional*, continued from above!)
+8. **Overlay Filesystem** (*optional*, continued from above!)
 
 	1. Create an `/etc/fstab` entry for the `data` partition, you can get the ID
 	   via `lsblk -o PARTUUID /dev/disk/by-label/data`. The entry might look like:
@@ -272,7 +274,7 @@ Basic Setup
 	   that need to persist across reboots, you'll need to disable and re-enable this
 	   option, rebooting each time.
 
-8. **Miscellaneous**
+9. **Miscellaneous**
 
 	- For network time, `sudo apt-get install --no-install-recommends ntp` and edit `/etc/ntp.conf` as appropriate.
 	
