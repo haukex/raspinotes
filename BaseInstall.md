@@ -16,7 +16,9 @@ a Raspberry Pi and Raspbian / Debian.
 Last tested:
 
 - May 2022 on a Raspberry Pi 3B+ with Raspberry Pi OS Lite (32-bit) 2022-04-04 (bullseye)
-- March 2023 on a Raspberry Pi 4 (2GB) with Raspberry Pi OS Lite 64-bit 2023-02-21 (bullseye)
+- April 2023 on a Raspberry Pi 4 (2GB) with Raspberry Pi OS Lite 64-bit 2023-02-21 (bullseye)
+
+TODO: Some of the links below to the Raspberry Pi documentation have changed.
 
 
 Basic Setup
