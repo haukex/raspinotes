@@ -276,6 +276,9 @@ Basic Setup
 	   in the "Performance Options" of `raspi-config`. Remember that if making changes
 	   that need to persist across reboots, you'll need to disable and re-enable this
 	   option, rebooting each time.
+	
+	5. To integrate information on whether the overlay filesystem is enabled or not into
+	   your prompt, see `overlaycheck.sh` in this repository.
 
 9. **Miscellaneous**
 
