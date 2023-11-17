@@ -1,6 +1,6 @@
 
-My Notes on Setting up Raspbian
-===============================
+My Notes on Setting up Raspberry Pi OS
+======================================
 
 *by Hauke Dämpfling <haukex@zero-g.net>
 at the Leibniz Institute of Freshwater Ecology and Inland Fisheries (IGB),
@@ -10,82 +10,44 @@ Berlin, Germany, <http://www.igb-berlin.de/>
 Introduction
 ------------
 
-These instructions assume you have some basic knowledge of using
-a Raspberry Pi and Raspbian / Debian.
+These instructions assume you have knowledge of using a Raspberry Pi and Debian Linux.
 
-Last tested:
+**Last tested:**
 
-- May 2022 on a Raspberry Pi 3B+ with Raspberry Pi OS Lite (32-bit) 2022-04-04 (bullseye)
-- April 2023 on a Raspberry Pi 4 (2GB) with Raspberry Pi OS Lite 64-bit 2023-02-21 (bullseye)
-
-TODO: Some of the links below to the Raspberry Pi documentation have changed.
-
+- November 2023 with
+	- Raspberry Pi OS Lite 64-bit 2023-10-10 (bookworm)
+	- Raspberry Pi Imager v1.8.1
+	- Raspberry Pi 3B+
 
 Basic Setup
 -----------
 
-1. Flash the Raspbian image onto an SD card. See also:
-<https://www.raspberrypi.org/documentation/installation/installing-images/>
+1. **Pre-Boot Setup**
 	
-	1. On the `boot` partition:
+	1. Use the Raspberry Pi Imager to flash the OS onto the SD card as follows.
 	
-		1. Touch a file `ssh`
-		   (<https://www.raspberrypi.org/documentation/remote-access/ssh/>)
+		1. You may need to select "No filtering" for the device so the OS selection isn't filtered.
+		   I always use the "lite" edition.
 		
-		2. In the file `config.txt`, uncomment the `hdmi_force_hotplug=1` line.
+		2. Use OS customization and edit and enable all of the settings:
 		
-		3. Edit `wpa_supplicant.conf` to the following (make sure file has LF line endings;
-		   <https://www.raspberrypi.org/documentation/configuration/wireless/headless.md>)
-			
-				ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-				update_config=1
-				country=<Insert 2 letter ISO 3166-1 country code here, e.g. DE>
-				
-				network={
-					ssid="ssid"
-					psk="pass"
-				}
-		
-		4. Choose a password and set it up via:
-		   `echo "pi:$(openssl passwd -6)" >userconf.txt`
-		   (as per <http://rptl.io/newuser> for new releases of Raspbian)
-		   (if you don't do this and get a message referring to this URL on
-		   each SSH login, you can delete `/etc/ssh/sshd_config.d/rename_user.conf`
-		   to disable the message)
+			- Hostname
+			- Username (I usually stick to `pi` for consistency) and password
+			- WiFi
+			- Locale settings
+			- Enable SSH and set up key ("Allow public-key authentication only")
+			- Disable telemetry
 	
-	2. On the `rootfs` partition:
+	2. *Optional:* If you need to set up `cron` jobs before the first boot, like those
+	   described in the corresponding section below, that is possible as follows.
+	   *Note* that the format of the crontab file *must* be valid;
+	   after booting the RPi, always use `crontab -e` to edit the crontab.
 	
-		1. Edit `/etc/hostname` and set the desired hostname
-		
-		2. Edit `/etc/hosts` to rename the `raspberrypi` entry as well
-		
-		3. **Security:** Set up SSH key-only auth before first boot:
-		   Create `/home/pi/.ssh` and `chown` it to the same UID & GID as `/home/pi`,
-		   and (optionally generating a new SSH key for this) copy your public SSH key
-		   to `authorized_keys` in that directory, for example:
-			
-				cd /path/to/rootfs
-				sudo mkdir -vp home/pi/.ssh
-				sudo cp -v ~/.ssh/id_rsa.pub home/pi/.ssh/authorized_keys
-				sudo chmod -v 700 home/pi/.ssh
-				sudo chmod -v 600 home/pi/.ssh/authorized_keys
-				sudo chown -Rv `stat -c %u:%g home/pi` home/pi/.ssh
-			
-			Also edit `/etc/ssh/sshd_config` and set:
-			
-				PermitRootLogin no
-				PasswordAuthentication no
-		
-		4. If you need to set up `cron` jobs before boot, like those described
-		   in the corresponding section below, that is possible as follows.
-		   *Note* that the format of the crontab file *must* be valid;
-		   after booting the RPi, always use `crontab -e` to edit the crontab.
-			
-				cd /path/to/rootfs
-				sudo vi var/spool/cron/crontabs/pi
-				# edit the file as necessary
-				sudo chmod -v 600 var/spool/cron/crontabs/pi
-				sudo chown -v `stat -c %u home/pi`:`stat -c %g var/spool/cron/crontabs` var/spool/cron/crontabs/pi
+			cd /path/to/rootfs
+			sudo vi var/spool/cron/crontabs/pi
+			# edit the file as necessary
+			sudo chmod -v 600 var/spool/cron/crontabs/pi
+			sudo chown -v `stat -c %u home/pi`:`stat -c %g var/spool/cron/crontabs` var/spool/cron/crontabs/pi
 	
 	3. *Optional Procedure:* Protecting the SD card against wear and sudden power-offs
 	   by making root FS read-only ("overlay filesystem") with a writable data partition.
@@ -97,22 +59,11 @@ Basic Setup
 		   the logs it uses) is placed on the `/data` partition - this is not (yet)
 		   covered in these instructions.
 		
-		2. Prevent automatic resize of the root filesystem
-		   as per <https://raspberrypi.stackexchange.com/a/56623>:
+		2. Using e.g. `gparted`, resize the root filesystem on the SD card to the
+		   desired size, e.g. 16GB, and then create a new ext4 primary partition covering
+		   the rest of the space on the SD card, label it e.g. `data`.
 		
-			1. In `/boot/cmdline.txt`, remove `init=/usr/lib/raspi-config/init_resize.sh`,
-			   but if it says `init=/usr/lib/raspberrypi-sys-mods/firstboot` (newer versions
-			   of Raspbian), then that doesn't need to be removed, because that script will
-			   not attempt the resize if there is another partition after the root partition.
-			
-			2. In the RPi's root filesystem, delete
-			   `/etc/init.d/resize2fs_once` and `/etc/rc3.d/S01resize2fs_once`
-		
-		3. Using e.g. `gparted`, resize the root filesystem on the SD card to the
-		   desired size, e.g. 16GB, and then create a new ext4 partition covering
-		   the rest of the space on the SD card, label it e.g. `data`
-		
-		4. The rest of the prodecure after booting is covered below.
+		3. The rest of this prodecure after booting is covered below.
 
 2. **At First Boot Procedures**
 
@@ -125,26 +76,27 @@ Basic Setup
 	
 	2. `sudo raspi-config`
 	
-		1. If not done above, **set a password** and the hostname
-		
-		2. Locales: Add needed locales (for me, `en_US.UTF-8` and `de_DE.UTF-8`),
+		1. Locales: Add needed locales (for me, `en_US.UTF-8` and `de_DE.UTF-8`),
 		   don't delete existing locales, set `C.UTF-8` as default
 		
-		3. If setting the keyboard layout setting fails (e.g. if no keyboard connected),
+		2. I prefer turning off predictable network interface names
+		   (this gives `eth0` instead of `enxMACADDR`; the WiFi adapter is apparently always called `wlan0`)
+		
+		3. Optional: Any other options as appropriate
+		
+		4. Since I usually configure my RPi remotely with no keyboard connected,
+		   the keyboard configuration in `raspi-config` fails, so if that happens,
 		   edit `/etc/default/keyboard` and e.g. set `XKBLAYOUT="de"` and `XKBVARIANT="nodeadkeys"`
-		
-		4. I prefer turning off predictable network i/f names
-		
-		5. All other options as appropriate
 	
-	3. `sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get dist-upgrade -y && sudo apt-get autoremove -y && echo Done` (reboot afterward is usually necessary)
+	3. `sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && echo Done`
+	   (reboot afterward is usually necessary)
 	
-	4. `sudo apt-get install --no-install-recommends aptitude ufw fail2ban vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc jq zip tofrodos`
+	4. `sudo apt-get install --no-install-recommends aptitude ufw vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-dev`
 	   (these are my preferred toolset on top of the Lite edition, you may modify this as you like)
 	
 	5. Misc.
 	
-		- `rm -vf /boot/wpa_supplicant.conf`
+		- Edit `/etc/ssh/sshd_config` and set `PermitRootLogin no`
 		- `sudo adduser pi wireshark`
 		- `perl -Mlocal::lib >>~/.profile`
 		- Set up any files like `.bash_aliases`, `.vimrc`, etc.
@@ -155,34 +107,37 @@ Basic Setup
 
 4. **fail2ban**
 
-	1. `sudo cp -v /etc/fail2ban/jail.conf /etc/fail2ban/jail.local`
+	1. `sudo apt-get install --no-install-recommends fail2ban python3-systemd`
+
+	2. `sudo cp -v /etc/fail2ban/jail.conf /etc/fail2ban/jail.local`
 	
-	2. `ls -l /etc/fail2ban/action.d/ufw.conf` - file should exist
+	3. `ls -l /etc/fail2ban/action.d/ufw.conf` - file should exist
 	
-	3. `cat /etc/fail2ban/jail.d/defaults-debian.conf`:
+	4. `cat /etc/fail2ban/jail.d/defaults-debian.conf`:
 	
 		- Should contain `enabled = true` in section `[sshd]`
 		- Add additional enables here if needed, for example,
 		  create a section `[pure-ftpd]` and add `enabled = true`
 	
-	4. Edit `/etc/fail2ban/jail.local` to set the following values:
+	5. Edit `/etc/fail2ban/jail.local` to set the following values:
 	
 		- **Note:** search from the top of the file to set the global values in the `[DEFAULT]` section
 		- `bantime   = 1day`
 		- `findtime  = 6hours`
 		- `maxretry  = 3`
+		- `backend   = systemd`  (<https://github.com/fail2ban/fail2ban/issues/3292#issuecomment-1678844644>)
 		- `banaction = ufw`
 		- In section `[sshd]`, set `mode = aggressive`
 	
-	5. In `/etc/fail2ban/fail2ban.conf`, set `dbpurgeage = 7d`
+	6. In `/etc/fail2ban/fail2ban.conf`, set `dbpurgeage = 7d`
 	
-	6. `sudo systemctl restart fail2ban`, then check status:
+	7. `sudo systemctl restart fail2ban`, then check status:
 	
 		- `sudo fail2ban-client status`
 		- `sudo fail2ban-client status sshd`
 		- `sudo zgrep 'Ban' /var/log/fail2ban.log*`
 	
-	7. Note: Manual banning of repeat offenders:
+	8. Note: Manual banning of repeat offenders:
 	
 		- `sudo zgrep Ban /var/log/fail2ban.log* | perl -wMstrict -Mvars=%x -nale '$x{$F[7]}++}{print "$_\t$x{$_}" for grep {$x{$_}>1} sort { $x{$b}<=>$x{$a} } keys %x'`
 		- `sudo ufw deny from ADDRESS comment 'too many failed login attempts'`
@@ -211,14 +166,15 @@ Basic Setup
 6. **Mail**: Configure Postfix either as "Local only" or "Internet Site" as appropriate in the following steps:
 	
 		sudo apt-get install alpine postfix bsd-mailx
+		echo "root: pi" | sudo tee -a /etc/aliases && echo "===>" && cat /etc/aliases
 		sudo vi /etc/postfix/main.cf
 		#=> correct "myhostname" if necessary
+		#=> may need to remove duplicates in "mydestination"
 		#=> if it doesn't exist, add the line "smtp_tls_security_level = may"
 		#=> if this option or the option "smtp_tls_CApath" doesn't exist,
 		#   add the line "smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt"
 		sudo dpkg-reconfigure postfix  # and configure as appropriate
-		echo "root: pi" | sudo tee -a /etc/aliases && echo "---" && cat /etc/aliases
-		sudo newaliases && sudo systemctl restart postfix
+		sudo systemctl restart postfix
 		echo "This is a mailx test" | mailx -s "mailx test" root
 		alpine
 		# Configure "User Domain" and anything else as needed
@@ -228,8 +184,6 @@ Basic Setup
 	1. `sudo apt-get install unattended-upgrades`
 	
 	2. `sudo vi /etc/apt/apt.conf.d/50unattended-upgrades`
-		- Change the two `origin=Debian` to `origin=${distro_id}`
-		  and change `label=Debian` to `label=Raspbian`
 		- Set `Unattended-Upgrade::Mail` to `pi@localhost`
 	
 	3. `sudo vi /etc/apt/apt.conf.d/20auto-upgrades`
@@ -246,43 +200,55 @@ Basic Setup
 
 8. **Overlay Filesystem** (*optional*, continued from above!)
 
-	1. Create an `/etc/fstab` entry for the `data` partition, you can get the ID
-	   via `lsblk -o PARTUUID /dev/disk/by-label/data`. The entry might look like:
-	   `PARTUUID=9730496b-03  /data  ext4  defaults,noatime  0  2`
-	   where you should also do `sudo mkdir -v /data`. Then reboot.
-	   
-	   *Note:* Depending on the data being written, you may also want to add
-	   `sync` to the mount options for a little bit more protection against
-	   sudden power offs (make sure you understand the implications of this
-	   depending on the type of flash memory you're using).
+	1. Create an `/etc/fstab` entry for the `data` partition:
+	
+			sudo mkdir -v /data
+			echo "PARTUUID=$(lsblk -no PARTUUID /dev/disk/by-label/data)  /data  ext4  defaults,noatime  0  2" | sudo tee -a /etc/fstab
+			cat /etc/fstab  # check format
+			sudo reboot
+	
+	*Note:* Depending on the data being written, you may also want to add
+	`sync` to the mount options for a little bit more protection against
+	sudden power offs (make sure you understand the implications of this
+	depending on the type of flash memory you're using).
 	
 	2. `sudo mkdir -v /data/pi`, `sudo chown pi:pi /data/pi`, and `ln -svnf /data/pi /home/pi/data`
 	
 	3. If you set up `postfix` and `alpine` above, do this:
 		
-			sudo mkdir -v /data/spool
-			sudo systemctl stop postfix
 			ls -l /var/spool/mail  # => should normally be a symlink to ../mail !
+			sudo systemctl stop postfix
+			sudo mkdir -v /data/spool
 			sudo mv -v /var/mail /data/spool/mail
 			sudo mv -v /var/spool/postfix /data/spool/postfix
 			sudo ln -svf /data/spool/mail /var/
 			sudo ln -svf /data/spool/mail /var/spool/
 			sudo ln -svf /data/spool/postfix /var/spool/
-			sudo systemctl start postfix
 			mv -v ~/mail /data/pi
 			ln -svf /data/pi/mail ~
+			sudo systemctl start postfix
 	
-	4. Later, after completing the installation, you can enable the "Overlay File System"
+	4. Currently, `overlayroot` defaults to `recurse=1`, meaning that the `/data` partition
+	   also gets overlayed, and `raspi-config` does not support corresponding options
+	   (see also <https://github.com/RPi-Distro/raspi-config/pull/225>). For now, as a
+	   workaround, apply `raspi-config_overlayroot.patch` from this repository.
+	
+	5. Later, after completing the installation, you can enable the "Overlay File System"
 	   in the "Performance Options" of `raspi-config`. Remember that if making changes
 	   that need to persist across reboots, you'll need to disable and re-enable this
 	   option, rebooting each time.
+	   
+	   Note this can also be done on the commandline:
+	   To turn **on** the overlay filesystem, `sudo raspi-config nonint do_overlayfs 0`,
+	   to turn it **off**, `sudo raspi-config nonint do_overlayfs 1`.
 	
-	5. To integrate information on whether the overlay filesystem is enabled or not into
+	6. To integrate information on whether the overlay filesystem is enabled or not into
 	   your prompt, see `overlaycheck.sh` in this repository.
 
 9. **Miscellaneous**
 
-	- For network time, `sudo apt-get install --no-install-recommends ntp` and edit `/etc/ntp.conf` as appropriate.
+	- For network time, `sudo apt-get install --no-install-recommends ntp` and edit `/etc/ntpsec/ntp.conf` as appropriate.
+	  *However,* newer OSes have `systemd-timesyncd` preinstalled!
 	
 	- If the Raspberry Pi doesn't have direct internet access after installation:
 		

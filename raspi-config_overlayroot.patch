@@ -1,0 +1,20 @@
+--- /usr/bin/raspi-config.orig	2023-11-17 19:47:00.397732669 +0100
++++ /usr/bin/raspi-config	2023-11-17 19:47:37.677364633 +0100
+@@ -2826,7 +2826,7 @@
+ 
+   # modify command line
+   if ! grep -q "overlayroot=tmpfs" $CMDLINE ; then
+-    sed -i $CMDLINE -e "s/^/overlayroot=tmpfs /"
++    sed -i $CMDLINE -e "s/^/overlayroot=tmpfs:recurse=0 /"
+   fi
+ 
+   if [ "$BOOTRO" = "yes" ] ; then
+@@ -2849,7 +2849,7 @@
+   fi
+ 
+   # modify command line
+-  sed -i $CMDLINE -e "s/\(.*\)overlayroot=tmpfs \(.*\)/\1\2/"
++  sed -i $CMDLINE -e "s/\(.*\)overlayroot=tmpfs:recurse=0 \(.*\)/\1\2/"
+ 
+   if [ "$BOOTRO" = "yes" ] ; then
+     if ! mount -o remount,ro /boot${FIRMWARE} 2>/dev/null ; then
