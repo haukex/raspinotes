@@ -24,10 +24,11 @@ Basic Setup
 
 1. **Pre-Boot Setup**
 	
-	1. Use the Raspberry Pi Imager to flash the OS onto the SD card as follows.
+	1. Use the Raspberry Pi Imager to flash the OS onto the SD card as per its instructions,
+	   with the following notes:
 	
 		1. You may need to select "No filtering" for the device so the OS selection isn't filtered.
-		   I always use the "lite" edition.
+		   I (almost) always use the "lite" edition.
 		
 		2. Use OS customization and edit and enable all of the settings:
 		
@@ -61,7 +62,8 @@ Basic Setup
 		
 		2. Using e.g. `gparted`, resize the root filesystem on the SD card to the
 		   desired size, e.g. 16GB, and then create a new ext4 primary partition covering
-		   the rest of the space on the SD card, label it e.g. `data`.
+		   the rest of the space on the SD card, label it e.g. `data`
+		   (at least that's what the rest of these instructions assume).
 		
 		3. The rest of this prodecure after booting is covered below.
 
@@ -85,14 +87,14 @@ Basic Setup
 		3. Optional: Any other options as appropriate
 		
 		4. Since I usually configure my RPi remotely with no keyboard connected,
-		   the keyboard configuration in `raspi-config` fails, so if that happens,
-		   edit `/etc/default/keyboard` and e.g. set `XKBLAYOUT="de"` and `XKBVARIANT="nodeadkeys"`
+		   the keyboard configuration in `raspi-config` usually fails, so if that happens,
+		   edit `/etc/default/keyboard` and set e.g. `XKBLAYOUT="de"` and `XKBVARIANT="nodeadkeys"`
 	
 	3. `sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && echo Done`
 	   (reboot afterward is usually necessary)
 	
 	4. `sudo apt-get install --no-install-recommends aptitude ufw vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-dev`
-	   (these are my preferred toolset on top of the Lite edition, you may modify this as you like)
+	   (these are my preferred tools on top of the Lite edition, you may modify this as you like)
 	
 	5. Misc.
 	
@@ -204,13 +206,13 @@ Basic Setup
 	
 			sudo mkdir -v /data
 			echo "PARTUUID=$(lsblk -no PARTUUID /dev/disk/by-label/data)  /data  ext4  defaults,noatime  0  2" | sudo tee -a /etc/fstab
-			cat /etc/fstab  # check format
+			cat /etc/fstab  # double-check to make sure it looks right
 			sudo reboot
 	
-	*Note:* Depending on the data being written, you may also want to add
-	`sync` to the mount options for a little bit more protection against
-	sudden power offs (make sure you understand the implications of this
-	depending on the type of flash memory you're using).
+		*Note:* Depending on the data being written, you may also want to add
+		`sync` to the mount options for a little bit more protection against
+		sudden power offs (make sure you understand the implications of this
+		depending on the type of flash memory you're using).
 	
 	2. `sudo mkdir -v /data/pi`, `sudo chown pi:pi /data/pi`, and `ln -svnf /data/pi /home/pi/data`
 	
@@ -239,8 +241,9 @@ Basic Setup
 	   option, rebooting each time.
 	   
 	   Note this can also be done on the commandline:
-	   To turn **on** the overlay filesystem, `sudo raspi-config nonint do_overlayfs 0`,
-	   to turn it **off**, `sudo raspi-config nonint do_overlayfs 1`.
+	   To turn on the overlay filesystem, `sudo raspi-config nonint do_overlayfs 0`,
+	   to turn it off, `sudo raspi-config nonint do_overlayfs 1`
+	   (yes, on=0 and off=1 is correct).
 	
 	6. To integrate information on whether the overlay filesystem is enabled or not into
 	   your prompt, see `overlaycheck.sh` in this repository.
