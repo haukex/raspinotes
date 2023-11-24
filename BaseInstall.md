@@ -232,8 +232,10 @@ Basic Setup
 	
 	4. Currently, `overlayroot` defaults to `recurse=1`, meaning that the `/data` partition
 	   also gets overlayed, and `raspi-config` does not support corresponding options
-	   (see also <https://github.com/RPi-Distro/raspi-config/pull/225>). For now, as a
-	   workaround, apply `raspi-config_overlayroot.patch` from this repository.
+	   (see also <https://github.com/RPi-Distro/raspi-config/pull/225>).
+	   For now, as a workaround, apply `raspi-config_overlayroot.patch` from this repository.
+	   For example, over a remote connection, `sudo patch -d/ -r- -p0` and then paste the patch into the terminal (Ctrl-D after).
+	   Note the patch needs to be reapplied when `raspi-config` gets updated!
 	
 	5. Later, after completing the installation, you can enable the "Overlay File System"
 	   in the "Performance Options" of `raspi-config`. Remember that if making changes
