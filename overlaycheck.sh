@@ -1,13 +1,9 @@
 #!/bin/bash
 # Check for Overlay Filesystem on Raspberry Pi (and writable data partition)
-# The following function can for example be placed in .bashrc, then for example:
-# PS1='\u@\h:\w[$(overlaycheck)]\$ '
+# The following function can for example be placed in .bashrc (or .bash_aliases),
+# then used in PS1, for example: PS1='\u@\h:\w$(overlaycheck)\$ '
+# also works in combination with __git_ps1, e.g.: PROMPT_COMMAND='__git_ps1 "..." "$(overlaycheck)\\\$ " "[%s]"'
 function overlaycheck {
-    mount | egrep -q '^overlay(root)? on / type overlay'; OVERFS=$?
-    [[ $(pwd -P)/ = /data/* ]]; DATAFS=$?
-    if (( OVERFS==0 )) && (( DATAFS!=0 )); then
-        echo -en '\033[01;31mOV\033[00m'
-    else
-        echo -en '\033[01;32mRW\033[00m'
-    fi
+	[[ "$( findmnt --all --first --noheadings --list --output FSTYPE --notruncate --target . )" =~ ^overlay ]] \
+		&& echo -en '[\033[01;31mOV\033[00m]'
 }
