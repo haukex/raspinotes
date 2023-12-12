@@ -4,6 +4,45 @@ Raspberry Pi as Wi-Fi Access Point
 **Important:** Do this *last*, because installing stuff via reverse proxy
 can be a bit of a pain!
 
+The following instructions were updated Dec 2023 based on the
+current [official RPi documentation on the topic][link1]
+and tested on the new Bookworm-based Raspberry Pi OS Lite.
+
+[link1]: https://www.raspberrypi.com/documentation/computers/configuration.html#host-a-wireless-network-on-your-raspberry-pi
+
+- Assuming you're using `ufw`:
+
+      sudo ufw allow DNS
+      sudo ufw allow from any port 68 to any port 67 proto udp comment DHCP
+
+- To set up and enable the WiFi AP:
+
+      sudo nmcli device wifi hotspot con-name Hotspot ssid <SSID> password <Password>
+      sudo nmcli connection modify Hotspot ipv4.addresses 192.168.42.1/24 \
+          autoconnect TRUE autoconnect-priority 1
+      sudo systemctl restart NetworkManager
+
+- If you keep the WiFi client connection you had previously, and you want to switch back to that:
+
+      sudo nmcli connection modify Hotspot autoconnect FALSE autoconnect-priority 0
+      sudo nmcli connection down Hotspot
+
+  If you don't want to keep the client connection, then you can simply delete it,
+  and the above `autoconnect-priority` settings are not needed.
+
+- Tips:
+  - Short device and connection list: `nmcli device` and `nmcli connection`
+    (can also be abbreviated `nmcli d` and `nmcli c`); details via `nmcli c show <con-name>`
+  - Documentation on NetworkManager settings: `man nm-settings` and <https://networkmanager.dev/docs/man-pages/>
+  - `sudo nmtui` is a curses-based NetworkManager configuration tool that can do (almost) all of the above
+    (it apparently doesn't support changing the `autoconnect` settings).
+
+
+Previous Manual Instructions
+----------------------------
+
+**Unmaintained:** Assuming the above `nmcli` method continues to work well for me, I will eventually delete this section.
+
 - Initial steps
   
       sudo apt-get install hostapd dnsmasq
