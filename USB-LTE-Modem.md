@@ -29,6 +29,7 @@ tested on the new Bookworm-based Raspberry Pi OS Lite.
 
 4. Use `sudo nmtui` and rename the connections to nicer/shorter names;
    in particular, name the Ethernet connection `Ethernet`
+   - `sudo nmcli connection modify LTEStick connection.metered TRUE`
 
 5. Enable IP forwarding (assuming `ufw` is in use)
 
