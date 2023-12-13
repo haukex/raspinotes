@@ -15,7 +15,8 @@ and tested on the new Bookworm-based Raspberry Pi OS Lite.
       sudo ufw allow DNS
       sudo ufw allow from any port 68 to any port 67 proto udp comment DHCP
 
-- To set up and enable the WiFi AP:
+- To set up and enable the WiFi AP, do the following. (Note: if you're currently connected to the RPi
+  via WiFi, the first command will immediately start up the AP and kill your connection.)
 
       sudo nmcli device wifi hotspot con-name Hotspot ssid <SSID> password <Password>
       sudo nmcli connection modify Hotspot ipv4.addresses 192.168.42.1/24 \

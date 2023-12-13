@@ -66,7 +66,7 @@ Basic Setup
          the rest of the space on the SD card, label it e.g. `data`
          (at least that's what the rest of these instructions assume).
 
-      3. The rest of this prodecure after booting is covered below.
+      3. The rest of this procedure after booting is covered below.
 
 2. **At First Boot Procedures**
 
@@ -96,6 +96,7 @@ Basic Setup
 
    4. `sudo apt-get install --no-install-recommends aptitude ufw vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-dev`
       (these are my preferred tools on top of the Lite edition, you may modify this as you like)
+      - Note: The installation of `tshark` will ask whether non-superusers should be able to capture packets, I usually say yes
 
    5. Misc.
 
@@ -214,7 +215,8 @@ Basic Setup
           sudo mkdir -v /data
           echo "PARTUUID=$(lsblk -no PARTUUID /dev/disk/by-label/data)  /data  ext4  defaults,noatime  0  2" | sudo tee -a /etc/fstab
           cat /etc/fstab  # double-check to make sure it looks right
-          sudo reboot
+          sudo systemctl daemon-reload
+          sudo mount /data
 
       *Note:* Depending on the data being written, you may also want to add
       `sync` to the mount options for a little bit more protection against
@@ -241,7 +243,7 @@ Basic Setup
       also gets overlayed, and `raspi-config` does not support corresponding options
       (see also <https://github.com/RPi-Distro/raspi-config/pull/225>).
       For now, as a workaround, apply `raspi-config_overlayroot.patch` from this repository.
-      For example, over a remote connection, `sudo patch -d/ -r- -p0` and then paste the patch into the terminal (Ctrl-D after).
+      For example, over a remote connection, `sudo patch -r- -d/ -p0` and then paste the patch into the terminal (Ctrl-D after).
       Note the patch needs to be reapplied when `raspi-config` gets updated!
 
    5. Later, after completing the installation, you can enable the "Overlay File System"
