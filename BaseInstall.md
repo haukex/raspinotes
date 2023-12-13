@@ -168,19 +168,25 @@ Basic Setup
 
 6. **Mail**: Configure Postfix either as "Local only" or "Internet Site" as appropriate in the following steps:
 
-       sudo apt-get install alpine postfix bsd-mailx
-       echo "root: pi" | sudo tee -a /etc/aliases && echo "===>" && cat /etc/aliases
-       sudo vi /etc/postfix/main.cf
-       #=> correct "myhostname" if necessary
-       #=> may need to remove duplicates in "mydestination"
-       #=> if it doesn't exist, add the line "smtp_tls_security_level = may"
-       #=> if this option or the option "smtp_tls_CApath" doesn't exist,
-       #   add the line "smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt"
-       sudo dpkg-reconfigure postfix  # and configure as appropriate
-       sudo systemctl restart postfix
-       echo "This is a mailx test" | mailx -s "mailx test" root
-       alpine
-       # Configure "User Domain" and anything else as needed
+   1. `sudo apt-get install alpine postfix bsd-mailx`
+
+   2. `echo "root: pi" | sudo tee -a /etc/aliases && echo "===>" && cat /etc/aliases`
+
+   3. `sudo vi /etc/postfix/main.cf`
+      - correct `myhostname` if necessary
+      - may need to remove duplicates in `mydestination`
+      - if it doesn't exist, add the line `smtp_tls_security_level = may`
+      - if this option or the option `smtp_tls_CApath` don't exist,
+        add the line `smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt`
+
+   4. `sudo dpkg-reconfigure postfix` and configure as appropriate
+
+   5. `sudo systemctl restart postfix`
+
+   6. `echo "This is a mailx test" | mailx -s "mailx test" root`
+
+   7. `alpine`
+      - Configure "User Domain" and anything else as needed
 
 7. **Unattended Upgrades**
 
