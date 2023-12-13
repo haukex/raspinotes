@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Simple Raspberry Pi Logging Script
 
-**BETA** - needs some more real-world testing
+**BETA** - seems to work well but needs some more real-world testing
 
 This script logs some system information to a log file and can "commit" that
 log file by appending it to the end of a different log file. This is intended
@@ -77,7 +77,8 @@ def commit_log():
         flock(ofh, LOCK_EX)
         ofh.seek(0, os.SEEK_END)
         flock(ifh, LOCK_EX)
-        ifh.readline()  # discard CSV header
+        if os.stat(ofh.fileno()).st_size:  # target file already has contents
+            ifh.readline()  # discard CSV header
         for line in ifh:
             ofh.write(line)
         ofh.flush()
