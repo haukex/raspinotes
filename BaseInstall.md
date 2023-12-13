@@ -27,19 +27,19 @@ Basic Setup
   1. Use the Raspberry Pi Imager to flash the OS onto the SD card as per its instructions,
      with the following notes:
   
-    1. You may need to select "No filtering" for the device so the OS selection isn't filtered.
-       I (almost) always use the "lite" edition.
+   1. You may need to select "No filtering" for the device so the OS selection isn't filtered.
+      I (almost) always use the "lite" edition.
+   
+   2. Use OS customization and edit and enable all of the settings:
+   
+     - Hostname
+     - Username (I usually stick to `pi` for consistency) and password
+     - WiFi
+     - Locale settings
+     - Enable SSH and set up key ("Allow public-key authentication only")
+     - Disable telemetry
     
-    2. Use OS customization and edit and enable all of the settings:
-    
-      - Hostname
-      - Username (I usually stick to `pi` for consistency) and password
-      - WiFi
-      - Locale settings
-      - Enable SSH and set up key ("Allow public-key authentication only")
-      - Disable telemetry
-    
-    3. The following steps in this section assume you've got the resulting SD card mounted on a Linux system.
+   3. The following steps in this section assume you've got the resulting SD card mounted on a Linux system.
   
   2. *Optional:* If you need to set up `cron` jobs before the first boot, like those
      described in the corresponding section below, that is possible as follows.
@@ -55,19 +55,19 @@ Basic Setup
   3. *Optional Procedure:* Protecting the SD card against wear and sudden power-offs
      by making root FS read-only ("overlay filesystem") with a writable data partition.
     
-    1. **Note** there is no point in setting up the "unattended upgrades" below,
-       you'll have to do updates manually. Also, while `fail2ban` (below) will
-       still generally work if the system isn't rebooted too often, note its
-       data will *not* be persisted across reboots unless all of it (including
-       the logs it uses) is placed on the `/data` partition - this is not (yet)
-       covered in these instructions.
-    
-    2. Using e.g. `gparted`, resize the root filesystem on the SD card to the
-       desired size, e.g. 16GB, and then create a new ext4 primary partition covering
-       the rest of the space on the SD card, label it e.g. `data`
-       (at least that's what the rest of these instructions assume).
-    
-    3. The rest of this prodecure after booting is covered below.
+   1. **Note** there is no point in setting up the "unattended upgrades" below,
+      you'll have to do updates manually. Also, while `fail2ban` (below) will
+      still generally work if the system isn't rebooted too often, note its
+      data will *not* be persisted across reboots unless all of it (including
+      the logs it uses) is placed on the `/data` partition - this is not (yet)
+      covered in these instructions.
+   
+   2. Using e.g. `gparted`, resize the root filesystem on the SD card to the
+      desired size, e.g. 16GB, and then create a new ext4 primary partition covering
+      the rest of the space on the SD card, label it e.g. `data`
+      (at least that's what the rest of these instructions assume).
+   
+   3. The rest of this prodecure after booting is covered below.
 
 2. **At First Boot Procedures**
 
@@ -80,17 +80,17 @@ Basic Setup
   
   2. `sudo raspi-config`
   
-    1. Locales: Add needed locales (for me, `en_US.UTF-8` and `de_DE.UTF-8`),
-       don't delete existing locales, set `C.UTF-8` as default
-    
-    2. I prefer turning off predictable network interface names
-       (this gives `eth0` instead of `enxMACADDR`; the WiFi adapter is apparently always called `wlan0`)
-    
-    3. Optional: Any other options as appropriate
-    
-    4. Since I usually configure my RPi remotely with no keyboard connected,
-       the keyboard configuration in `raspi-config` usually fails, so if that happens,
-       edit `/etc/default/keyboard` and set e.g. `XKBLAYOUT="de"` and `XKBVARIANT="nodeadkeys"`
+   1. Locales: Add needed locales (for me, `en_US.UTF-8` and `de_DE.UTF-8`),
+      don't delete existing locales, set `C.UTF-8` as default
+   
+   2. I prefer turning off predictable network interface names
+      (this gives `eth0` instead of `enxMACADDR`; the WiFi adapter is apparently always called `wlan0`)
+   
+   3. Optional: Any other options as appropriate
+   
+   4. Since I usually configure my RPi remotely with no keyboard connected,
+      the keyboard configuration in `raspi-config` usually fails, so if that happens,
+      edit `/etc/default/keyboard` and set e.g. `XKBLAYOUT="de"` and `XKBVARIANT="nodeadkeys"`
   
   3. `sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && echo Done`
      (reboot afterward is usually necessary)
@@ -259,16 +259,16 @@ Basic Setup
   
   - If the Raspberry Pi doesn't have direct internet access after installation:
     
-    1. In `/etc/proxychains4.conf`, replace the default `socks4` line in the `[ProxyList]` section
-       with `socks5  127.0.0.1  12333`
-    
-    2. When you connect to the RPi via SSH, use `ssh -R12333 pi@...`
-    
-    3. Then, with commands that support it, you can use e.g. `ALL_PROXY=socks5h://localhost:12333 curl http://example.com`,
-       for other commands use e.g. `sudo proxychains4 -q apt-get update` or `proxychains4 -q cpanm ...`
-    
-    4. If you have a Git repository on the RPi that you would like to push to, you can push to a non-bare
-       repository by doing this in the target repository: `git config receive.denyCurrentBranch updateInstead`
+   1. In `/etc/proxychains4.conf`, replace the default `socks4` line in the `[ProxyList]` section
+      with `socks5  127.0.0.1  12333`
+   
+   2. When you connect to the RPi via SSH, use `ssh -R12333 pi@...`
+   
+   3. Then, with commands that support it, you can use e.g. `ALL_PROXY=socks5h://localhost:12333 curl http://example.com`,
+      for other commands use e.g. `sudo proxychains4 -q apt-get update` or `proxychains4 -q cpanm ...`
+   
+   4. If you have a Git repository on the RPi that you would like to push to, you can push to a non-bare
+      repository by doing this in the target repository: `git config receive.denyCurrentBranch updateInstead`
   
   - Sometimes, on some Wi-Fi nets, Wi-Fi will stop working unless I reboot the Pi once in a while.
     This can be done via e.g. `sudo -i crontab -e`: `0 8 * * * /sbin/shutdown --reboot +5 2>/dev/null`
