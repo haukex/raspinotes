@@ -14,8 +14,8 @@ These instructions assume you have knowledge of using a Raspberry Pi and Debian 
 
 **Last tested:**
 
-- November 2023 with
-	- Raspberry Pi OS Lite 64-bit 2023-10-10 (bookworm)
+- December 2023 with
+	- Raspberry Pi OS Lite 64-bit 2023-12-11 (bookworm)
 	- Raspberry Pi Imager v1.8.1
 	- Raspberry Pi 3B+
 
@@ -38,10 +38,12 @@ Basic Setup
 			- Locale settings
 			- Enable SSH and set up key ("Allow public-key authentication only")
 			- Disable telemetry
+		
+		3. The following steps in this section assume you've got the resulting SD card mounted on a Linux system.
 	
 	2. *Optional:* If you need to set up `cron` jobs before the first boot, like those
 	   described in the corresponding section below, that is possible as follows.
-	   *Note* that the format of the crontab file *must* be valid;
+	   *Note* that the format of the crontab file *must* be valid, so double-check it for mistakes;
 	   after booting the RPi, always use `crontab -e` to edit the crontab.
 	
 			cd /path/to/rootfs
