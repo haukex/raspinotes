@@ -20,14 +20,14 @@ tested on the new Bookworm-based Raspberry Pi OS Lite.
    - I also haven't yet tested using the LTE stick's DMZ mode
    - Note: The USB stick I used has the 192.168.8.X subnet and MAC enx001e101f0000
 
-2. https://github.com/haukex/raspinotes/blob/590ca495/BaseInstall.md
+2. https://github.com/haukex/raspinotes/blob/7c42cf33/BaseInstall.md
    - But turn **on** predictable network interface names (`enxMACADDRESS`)
    - Overlay filesystem, no unattended upgrades, IP broadcast optional, fail2ban optional
    - Scheduled daily reboots (just to play it safe)
 
-3. https://github.com/haukex/raspinotes/blob/79ec17c6/WiFiAP.md
+3. https://github.com/haukex/raspinotes/blob/7c42cf33/WiFiAP.md
 
-4. Use `sudo nmtui` and rename the connections to more useful names;
+4. Use `sudo nmtui` and rename the connections to nicer/shorter names;
    in particular, name the Ethernet connection `Ethernet`
 
 5. Enable IP forwarding (assuming `ufw` is in use)
@@ -37,9 +37,11 @@ tested on the new Bookworm-based Raspberry Pi OS Lite.
        sudo vi /etc/default/ufw      # and set DEFAULT_FORWARD_POLICY="ACCEPT"
 
 6. Configure Ethernet+WiFi in a Bridge (based on the [RPi documentation][link1])
+   **Important:** Pick a different IP address range than for WiFi, so as to
+   not cause a conflict.
 
        sudo nmcli connection add type bridge con-name Bridge ifname bridge0 \
-           ipv4.addresses 192.168.42.1/24 ipv4.method shared
+           ipv4.addresses 192.168.1.1/24 ipv4.method shared
        sudo nmcli connection modify Ethernet master bridge0
        sudo nmcli connection modify Hotspot master bridge0
        sudo nmtui  # and re-configure the WiFi connection password if necessary
