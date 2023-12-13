@@ -19,12 +19,12 @@ and tested on the new Bookworm-based Raspberry Pi OS Lite.
 
       sudo nmcli device wifi hotspot con-name Hotspot ssid <SSID> password <Password>
       sudo nmcli connection modify Hotspot ipv4.addresses 192.168.42.1/24 \
-          autoconnect TRUE autoconnect-priority 1
+          autoconnect TRUE connection.autoconnect-priority 1
       sudo systemctl restart NetworkManager
 
 - If you keep the WiFi client connection you had previously, and you want to switch back to that:
 
-      sudo nmcli connection modify Hotspot autoconnect FALSE autoconnect-priority 0
+      sudo nmcli connection modify Hotspot autoconnect FALSE connection.autoconnect-priority 0
       sudo nmcli connection down Hotspot
 
   If you don't want to keep the client connection, then you can simply delete it,
