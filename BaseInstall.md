@@ -13,10 +13,10 @@ These instructions assume you have knowledge of using a Raspberry Pi and Debian 
 
 **Last tested:**
 
-- December 2023 with
-   - Raspberry Pi OS Lite 64-bit 2023-12-11 (bookworm)
-   - Raspberry Pi Imager v1.8.1
-   - Raspberry Pi 3B+
+- September 2025 with
+   - Raspberry Pi OS Lite 64-bit 2025-05-13 (bookworm)
+   - Raspberry Pi Imager v1.9.6
+   - Raspberry Pi Zero 2 W
 
 Basic Setup
 -----------
@@ -27,15 +27,15 @@ Basic Setup
       with the following notes:
 
       1. You may need to select "No filtering" for the device so the OS selection isn't filtered.
-         I (almost) always use the "lite" edition.
+         I (almost) always use the "Lite" edition.
 
       2. Use OS customization and edit and enable all of the settings:
 
          - Hostname
-         - Username (I usually stick to `pi` for consistency) and password
+         - Username (I usually stick to `pi` for consistency) and a strong password
          - WiFi
          - Locale settings
-         - Enable SSH and set up key ("Allow public-key authentication only")
+         - Enable SSH and set up key with "Allow public-key authentication only"
          - Disable telemetry
 
       3. The following steps in this section assume you've got the resulting SD card mounted on a Linux system.
@@ -82,28 +82,35 @@ Basic Setup
       1. Locales: Add needed locales (for me, `en_US.UTF-8` and `de_DE.UTF-8`),
          don't delete existing locales, set `C.UTF-8` as default
 
-      2. I prefer turning off predictable network interface names
+      2. I prefer turning *off* "predictable network interface names"
          (this gives `eth0` instead of `enxMACADDR`; the WiFi adapter is apparently always called `wlan0`)
 
-      3. Optional: Any other options as appropriate
+      3. Optional: Any other options as appropriate (serial port, I2C, etc.)
 
-      4. Since I usually configure my RPi remotely with no keyboard connected,
+      4. If the keyboard layout wasn't configured in the RPi Imager above, then
+         since I usually configure my RPi remotely with no keyboard connected,
          the keyboard configuration in `raspi-config` usually fails, so if that happens,
          edit `/etc/default/keyboard` and set e.g. `XKBLAYOUT="de"` and `XKBVARIANT="nodeadkeys"`
+         (or perhaps `XKBLAYOUT="us,de"` and `XKBVARIANT=",nodeadkeys"` with `XKBOPTIONS="grp:sclk_toggle,grp_led:scroll"`)
 
    3. `sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && echo Done`
       (reboot afterward is usually necessary)
 
-   4. `sudo apt-get install --no-install-recommends aptitude ufw vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-dev`
-      (these are my preferred tools on top of the Lite edition, you may modify this as you like)
+   4. `sudo apt install --no-install-recommends rsyslog aptitude ufw vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-dev`
+      - These are my preferred tools on top of the Lite edition, you may of course modify this list as you like
       - Note: The installation of `tshark` will ask whether non-superusers should be able to capture packets, I usually say yes
+      - Note: The following packages were already installed on the Lite edition last time I checked: `zip build-essential`
+        (but it doesn't hurt to list them above anyway)
+      - The installation of `rsyslog` is not strictly necessary, but newer versions of Debian/Raspbian use `journalctl`
+        and `/var/log/syslog` doesn't exist by default anymore; this installation brings it back.
 
    5. Misc.
 
       - Edit `/etc/ssh/sshd_config` and set `PermitRootLogin no`
-      - `sudo adduser pi wireshark`
+      - `sudo adduser $USER wireshark`
       - `perl -Mlocal::lib >>~/.profile`
       - Set up any files like `.bash_aliases`, `.vimrc`, etc.
+         - My own "dotfiles" repo: `mkdir -vp ~/code && git clone https://github.com/haukex/dotfiles.git ~/code/dotfiles && echo "~/code/dotfiles" >>~/.git-mysync && ~/code/dotfiles/bootstrap.sh`
 
 3. **UFW**: `sudo ufw allow OpenSSH && sudo ufw enable`
 
@@ -111,7 +118,7 @@ Basic Setup
 
 4. **fail2ban**
 
-   1. `sudo apt-get install --no-install-recommends fail2ban python3-systemd`
+   1. `sudo apt install --no-install-recommends fail2ban python3-systemd python3-pyinotify`
 
    2. `sudo cp -v /etc/fail2ban/jail.conf /etc/fail2ban/jail.local`
 
@@ -126,8 +133,8 @@ Basic Setup
    5. Edit `/etc/fail2ban/jail.local` to set the following values:
 
       - **Note:** search from the top of the file to set the global values in the `[DEFAULT]` section
-      - `bantime   = 1day`
-      - `findtime  = 6hours`
+      - `bantime   = 3days`
+      - `findtime  = 1day`
       - `maxretry  = 3`
       - `backend   = systemd`  (<https://github.com/fail2ban/fail2ban/issues/3292#issuecomment-1678844644>)
       - `banaction = ufw`
@@ -143,6 +150,8 @@ Basic Setup
 
    8. Note: Manual banning of repeat offenders:
 
+      - _**Notice** & TODO: I haven't tested the following commands in a while_ - there may have been changes
+        in more recent versions of the system packages that the following may need to be adjusted for.
       - `sudo zgrep Ban /var/log/fail2ban.log* | perl -wMstrict -Mvars=%x -nale '$x{$F[7]}++}{print "$_\t$x{$_}" for grep {$x{$_}>1} sort { $x{$b}<=>$x{$a} } keys %x'`
       - `sudo ufw deny from ADDRESS comment 'too many failed login attempts'`
 
@@ -169,9 +178,9 @@ Basic Setup
 
 6. **Mail**: Configure Postfix either as "Local only" or "Internet Site" as appropriate in the following steps:
 
-   1. `sudo apt-get install alpine postfix bsd-mailx`
+   1. `sudo apt install alpine postfix bsd-mailx`
 
-   2. `echo "root: pi" | sudo tee -a /etc/aliases && echo "===>" && cat /etc/aliases`
+   2. `echo "root: $USER" | sudo tee -a /etc/aliases && echo "===>" && cat /etc/aliases`
 
    3. `sudo vi /etc/postfix/main.cf`
       - correct `myhostname` if necessary
@@ -191,7 +200,7 @@ Basic Setup
 
 7. **Unattended Upgrades**
 
-   1. `sudo apt-get install unattended-upgrades`
+   1. `sudo apt install unattended-upgrades`
 
    2. `sudo vi /etc/apt/apt.conf.d/50unattended-upgrades`
       - Set `Unattended-Upgrade::Mail` to `pi@localhost`
@@ -206,7 +215,7 @@ Basic Setup
 
    4. Test with `sudo unattended-upgrade -d -v --dry-run`
 
-   5. Enable with `sudo dpkg-reconfigure --priority=low unattended-upgrades`
+   5. Enable (and disable) with `sudo dpkg-reconfigure --priority=low unattended-upgrades`
 
 8. **Overlay Filesystem** (*optional*, continued from above!)
 
@@ -247,22 +256,37 @@ Basic Setup
       Note the patch needs to be reapplied when `raspi-config` gets updated!
 
    5. Later, after completing the installation, you can enable the "Overlay File System"
+      (and optionally the "write-protected boot partition")
       in the "Performance Options" of `raspi-config`. Remember that if making changes
       that need to persist across reboots, you'll need to disable and re-enable this
       option, rebooting each time.
 
-      Note this can also be done on the commandline:
-      To turn on the overlay filesystem, `sudo raspi-config nonint do_overlayfs 0`,
-      to turn it off, `sudo raspi-config nonint do_overlayfs 1`
-      (yes, on=0 and off=1 is correct).
+      This can also be done from the command line:
+
+      - To enable, `for x in enable_overlayfs enable_bootro; do sudo raspi-config nonint $x; done; sudo reboot`
+        (alternative: `sudo raspi-config nonint do_overlayfs 0`)
+
+      - To disable, `sudo raspi-config nonint disable_overlayfs && sudo reboot`
+        and then `sudo raspi-config nonint disable_bootro && sudo mount -o remount,rw /boot/firmware && sudo systemctl daemon-reload`
+        - Two steps are required because disabling the read-only boot partition requires editing `/etc/fstab`,
+          which can't be done when the overlay filesystem is enabled.
+        - This is also why I'm not recommending `sudo raspi-config nonint do_overlayfs 1` for this step,
+          since that doesn't warn about it not disabling the read-only boot partition.
+
+      - To get the current status,
+        `for x in get_overlay_conf get_bootro_conf get_overlay_now get_bootro_now; do echo -n "$x="; sudo raspi-config nonint $x; done`
+        where 1=false and 0=true (*NIX process exit codes)
 
    6. To integrate information on whether the overlay filesystem is enabled or not into
       your prompt, see `overlaycheck.sh` in this repository.
 
 9. **Miscellaneous**
 
-   - For network time, `sudo apt-get install --no-install-recommends ntp` and edit `/etc/ntpsec/ntp.conf` as appropriate.
-     *However,* newer OSes have `systemd-timesyncd` preinstalled!
+   - To add a Wi-Fi network later, either use `sudo nmtui`, or run `nmcli --ask device wifi connect <SSID>`
+     (may need to first disconnect from Wi-Fi for the latter). Hint: `nmcli device wifi list`
+
+   - Newer OSes generally have `systemd-timesyncd` installed, so `ntp` isn't really necessary anymore, but
+     in case it is: `sudo apt install --no-install-recommends ntp` and edit `/etc/ntpsec/ntp.conf` as appropriate.
 
    - If the Raspberry Pi doesn't have direct internet access after installation:
 
@@ -272,7 +296,7 @@ Basic Setup
       2. When you connect to the RPi via SSH, use `ssh -R12333 pi@...`
 
       3. Then, with commands that support it, you can use e.g. `ALL_PROXY=socks5h://localhost:12333 curl http://example.com`,
-         for other commands use e.g. `sudo proxychains4 -q apt-get update` or `proxychains4 -q cpanm ...`
+         for other commands use e.g. `sudo proxychains4 -q apt update` or `proxychains4 -q cpanm ...`
 
       4. If you have a Git repository on the RPi that you would like to push to, you can push to a non-bare
          repository by doing this in the target repository: `git config receive.denyCurrentBranch updateInstead`
@@ -280,8 +304,11 @@ Basic Setup
    - Sometimes, on some Wi-Fi nets, Wi-Fi will stop working unless I reboot the Pi once in a while.
      This can be done via e.g. `sudo -i crontab -e`: `0 8 * * * /sbin/shutdown --reboot +5 2>/dev/null`
 
-   - Serial port: `sudo adduser pi dialout`, `stty -F /dev/ttyS0 19200 cs8 -parenb raw -crtscts -echo`, `cat /dev/ttyS0`
-     (Also: `minicom -D/dev/ttyS0` and `screen /dev/ttyS0 19200`)
+   - Serial port hints:
+     - `sudo adduser $USER dialout`
+     - `stty -F /dev/ttyS0 19200 cs8 -parenb raw -crtscts -echo` and `cat /dev/ttyS0`
+     - `minicom -D/dev/ttyS0`
+     - `screen /dev/ttyS0 19200`
 
    - Making a backup of an SD card from another system (where `/dev/sdb` is the SD card):
      `sudo dd if=/dev/sdb | gzip -9 >backup.img.gz`
@@ -290,7 +317,7 @@ Basic Setup
 Author, Copyright, and License
 ------------------------------
 
-Copyright (c) 2016-2023 Hauke Dämpfling <haukex@zero-g.net>
+Copyright (c) 2016-2025 Hauke Dämpfling <haukex@zero-g.net>
 at the Leibniz Institute of Freshwater Ecology and Inland Fisheries (IGB),
 Berlin, Germany, <https://www.igb-berlin.de/>
 
