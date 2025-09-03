@@ -96,16 +96,16 @@ Basic Setup
    3. `sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && echo Done`
       (reboot afterward is usually necessary)
 
-   4. `sudo apt install --no-install-recommends rsyslog aptitude ufw vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-dev`
+   4. `sudo apt install --no-install-recommends aptitude ufw vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-dev`
       - These are my preferred tools on top of the Lite edition, you may of course modify this list as you like
       - Note: The installation of `tshark` will ask whether non-superusers should be able to capture packets, I usually say yes
       - Note: The following packages were already installed on the Lite edition last time I checked: `zip build-essential`
         (but it doesn't hurt to list them above anyway)
-      - The installation of `rsyslog` is not strictly necessary, but newer versions of Debian/Raspbian use `journalctl`
-        and `/var/log/syslog` doesn't exist by default anymore; this installation brings it back.
 
    5. Misc.
 
+      - Newer versions of Debian/Raspbian use `journalctl` and `/var/log/syslog` doesn't exist by default anymore,
+        to bring it back: `sudo apt install rsyslog`
       - Edit `/etc/ssh/sshd_config` and set `PermitRootLogin no`
       - `sudo adduser $USER wireshark`
       - `perl -Mlocal::lib >>~/.profile`
@@ -255,7 +255,10 @@ Basic Setup
       For example, over a remote connection, `sudo patch -r- -d/ -p0` and then paste the patch into the terminal (Ctrl-D after).
       Note the patch needs to be reapplied when `raspi-config` gets updated!
 
-   5. Later, after completing the installation, you can enable the "Overlay File System"
+   5. To integrate information on whether the overlay filesystem is enabled or not into
+      your prompt, see `overlaycheck.sh` in this repository.
+
+   6. Later, after completing the installation, you can enable the "Overlay File System"
       (and optionally the "write-protected boot partition")
       in the "Performance Options" of `raspi-config`. Remember that if making changes
       that need to persist across reboots, you'll need to disable and re-enable this
@@ -263,7 +266,7 @@ Basic Setup
 
       This can also be done from the command line:
 
-      - To enable, `for x in enable_overlayfs enable_bootro; do sudo raspi-config nonint $x; done; sudo reboot`
+      - To enable, `for x in enable_overlayfs enable_bootro; do sudo raspi-config nonint $x; done && sudo reboot`
         (alternative: `sudo raspi-config nonint do_overlayfs 0`)
 
       - To disable, `sudo raspi-config nonint disable_overlayfs && sudo reboot`
@@ -276,9 +279,6 @@ Basic Setup
       - To get the current status,
         `for x in get_overlay_conf get_bootro_conf get_overlay_now get_bootro_now; do echo -n "$x="; sudo raspi-config nonint $x; done`
         where 1=false and 0=true (*NIX process exit codes)
-
-   6. To integrate information on whether the overlay filesystem is enabled or not into
-      your prompt, see `overlaycheck.sh` in this repository.
 
 9. **Miscellaneous**
 
@@ -312,6 +312,19 @@ Basic Setup
 
    - Making a backup of an SD card from another system (where `/dev/sdb` is the SD card):
      `sudo dd if=/dev/sdb | gzip -9 >backup.img.gz`
+
+   - Though the following is a **security risk**, it may be acceptable in certain limited circumstances,
+     such as devices not connected to a network. To prevent being prompted for a password when doing
+     administrative tasks (esp. in the GUI):
+
+         cat <<'EOF' | sudo tee /etc/polkit-1/rules.d/49-sudo-nopasswd.rules
+         polkit.addRule(function(action, subject) {
+            if (subject.isInGroup("sudo")) {
+               return polkit.Result.YES;
+            }
+         });
+         EOF
+
 
 
 Author, Copyright, and License

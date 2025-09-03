@@ -3,6 +3,9 @@ Raspberry Pi Notes
 
 These are my notes on setting up Raspberry Pis.
 
+The best place to start is probably
+[my notes on a base installation of Raspberry Pi OS](./BaseInstall.md).
+
 Author, Copyright, and License
 ------------------------------
 
