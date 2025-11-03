@@ -17,6 +17,9 @@ These instructions assume you have knowledge of using a Raspberry Pi and Debian 
    - Raspberry Pi OS Lite 64-bit 2025-05-13 (bookworm)
    - Raspberry Pi Imager v1.9.6
    - Raspberry Pi Zero 2 W
+- November 2025 with
+   - Raspberry Pi OS Lite 32-bit 2025-10-01 (trixie)
+   - Raspberry Pi Zero W
 
 Basic Setup
 -----------
@@ -96,7 +99,7 @@ Basic Setup
    3. `sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && echo Done`
       (reboot afterward is usually necessary)
 
-   4. `sudo apt install --no-install-recommends aptitude ufw vim git screen moreutils minicom ntpdate socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-dev`
+   4. `sudo apt install --no-install-recommends aptitude ufw vim git screen moreutils minicom socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-dev`
       - These are my preferred tools on top of the Lite edition, you may of course modify this list as you like
       - Note: The installation of `tshark` will ask whether non-superusers should be able to capture packets, I usually say yes
       - Note: The following packages were already installed on the Lite edition last time I checked: `zip build-essential`
