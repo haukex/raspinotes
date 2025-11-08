@@ -42,6 +42,9 @@ import inotify.adapters  # type: ignore[import-untyped]
 # spell: ignore FIVEBITS SIXBITS SEVENBITS EIGHTBITS stopbits inotify
 # spell: ignore bluetoothctl btmgmt hciconfig pairable piscan sdptool
 
+# TODO: It would be cool if this server could accept connections on a
+# second port, where it only receives serial port configuration options.
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
