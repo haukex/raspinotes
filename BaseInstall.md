@@ -291,6 +291,10 @@ Basic Setup
    - Newer OSes generally have `systemd-timesyncd` installed, so `ntp` isn't really necessary anymore, but
      in case it is: `sudo apt install --no-install-recommends ntp` and edit `/etc/ntpsec/ntp.conf` as appropriate.
 
+   - For RTC, e.g. DS3231 3.3V compatible breakout board: Wire up RTC as appropriate (3.3V, GND, SCL, SDA),
+     add `dtoverlay=i2c-rtc,ds323` to `/boot/firmware/config.txt`, reboot,
+     and `sudo apt install util-linux-extra` for `hwclock` command, to test `sudo hwclock --test`
+
    - If the Raspberry Pi doesn't have direct internet access after installation:
 
       1. In `/etc/proxychains4.conf`, replace the default `socks4` line in the `[ProxyList]` section
