@@ -4,6 +4,8 @@ Serial-to-Bluetooth Bridge
 **WARNING: BETA** I've only done basic testing on this.
 
 - Tested on Raspberry Pi Zero W with Raspberry Pi OS Lite 32-bit 2025-10-01 (trixie)
+  - A fairly large electrolytic capacitor (e.g. 470-1000uF) on the 5V pins is useful
+    to handle spikes and prevent reboots when plugging in OTG cable.
 - Base Installation: <https://github.com/haukex/raspinotes/blob/e6d82750/BaseInstall.md>
   - With overlay filesystem, ufw
   - Without fail2ban, crontab, mail, unattended upgrades
