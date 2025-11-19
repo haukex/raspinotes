@@ -1,32 +1,25 @@
 Serial-to-Bluetooth Bridge
 ==========================
 
-**WARNING: BETA** I've only done basic testing on this.
-
 - Tested on Raspberry Pi Zero W with Raspberry Pi OS Lite 32-bit 2025-10-01 (trixie)
   - A fairly large electrolytic capacitor (e.g. 470-1000uF) on the 5V pins is useful
-    to handle spikes and prevent reboots when plugging in OTG cable.
+    to handle current spikes and prevent reboots when plugging in OTG cable.
 - Base Installation: <https://github.com/haukex/raspinotes/blob/e6d82750/BaseInstall.md>
   - With overlay filesystem, ufw, proxychains
   - Without fail2ban, crontab, mail, unattended upgrades
   - In raspi-config, enable WLAN power saving
 
-Setup:
+Setup on RPi:
 
-    # From local machine:
-    scp bt_serial_bridge.py bt-serial-bridge.service pi@192.168.x.x:
-    # Then ssh into the RPi
+    git clone https://github.com/haukex/raspinotes.git ~/code/raspinotes
 
-    sudo apt install -y python3-serial python3-bluez python3-inotify
+    ~/code/raspinotes/bt-serial/install.sh
 
-    sudo mv -v ~/bt_serial_bridge.py /usr/local/bin/
-    sudo chown -c root:root /usr/local/bin/bt_serial_bridge.py
-    sudo chmod -c 755 /usr/local/bin/bt_serial_bridge.py
-
-    sudo mv -v ~/bt-serial-bridge.service /etc/systemd/system/
-    sudo chown -c root:root /etc/systemd/system/bt-serial-bridge.service
-    sudo chmod -c 644 /etc/systemd/system/bt-serial-bridge.service
-    # Adjust settings (port name, baud rate etc.) in that file as needed
+    sudo vi /etc/systemd/system/bt-serial-bridge.service
+      # Adjust settings (UUID, ports, baud rate etc.) in that file as needed
+      # BT UUID should be random, *except* xxxxxxxx-0000-1000-8000-00805f9b34fb
+    # Just for example, this replaces the UUID by a random one:
+    sudo perl -wMstrict -i -pe 's/--bt-uuid=\K[-0-9a-fA-F]{36}\b/chomp(my $u=lc qx#uuid -v4#);say STDERR $u;$u/e' /etc/systemd/system/bt-serial-bridge.service
 
     sudo rfkill unblock bluetooth
 
@@ -45,16 +38,23 @@ Setup:
     sudo systemctl enable bt-serial-bridge
     sudo systemctl start bt-serial-bridge
 
+    # Optional (conserve power on deployed systems):
+    sudo rfkill block wlan
+
+Debugging notes:
+
     # For testing:
     sudo socat pty,rawer,link=/tmp/fakepty -,icanon=0,min=1
     sudo vi /etc/systemd/system/bt-serial-bridge.service
       ExecStart=... --debug /tmp/fakepty
 
-    # Optional (conserve power on deployed systems):
-    sudo rfkill block wlan
+    # Simulating re-connect
+    ls -l /sys/bus/usb-serial/devices  #=> e.g. ".../usb1/1-1/1-1:..."
+    echo '1-1' | sudo tee /sys/bus/usb/drivers/usb/unbind
+    echo '1-1' | sudo tee /sys/bus/usb/drivers/usb/bind
 
-<!-- spell: ignore Mstrict Pairable bluetoothd bluez fakepty icanon rfkill socat wlan trixie inotify proxychains raspi -->
 
+<!-- spell: ignore Mstrict Pairable bluetoothd fakepty icanon rfkill socat wlan trixie proxychains raspi raspinotes -->
 
 Author, Copyright, and License
 ------------------------------

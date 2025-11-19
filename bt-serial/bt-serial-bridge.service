@@ -7,7 +7,7 @@ After=bluetooth.service
 Type=idle
 Restart=always
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=/usr/local/bin/bt_serial_bridge.py --init-bt /dev/ttyUSB0
+ExecStart=/usr/local/bin/bt_serial_bridge.py --init-bt --bt-uuid=94f39d29-7d6d-437d-973b-fba39e49d4ee /dev/ttyUSB0 /dev/ttyUSB1
 KillSignal=SIGINT
 
 [Install]

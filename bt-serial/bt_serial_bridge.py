@@ -35,8 +35,8 @@ import socket
 import time
 import io
 import serial
-import bluetooth  # type: ignore[import-untyped]
-import inotify.adapters  # type: ignore[import-untyped]
+import bluetooth
+import inotify.adapters
 
 # spell: ignore RFCOMM dsrdtr rtscts xonxoff baudrate bytesize
 # spell: ignore FIVEBITS SIXBITS SEVENBITS EIGHTBITS stopbits inotify
@@ -62,18 +62,20 @@ def main() -> None:
                         help="flow control (default: none)",
                         choices=['none', 'xonxoff', 'rtscts', 'dsrdtr'],
                         default='none')
+    # UUID should be random, *except* xxxxxxxx-0000-1000-8000-00805f9b34fb
     parser.add_argument('-u', '--bt-uuid', help="Bluetooth UUID", type=UUID,
-                        default='94f39d29-7d6d-437d-973b-fba39e49d4ee')
+                        required=True)
     parser.add_argument('-i', '--init-bt', help="Initialize Bluetooth",
                         action='store_true')
     parser.add_argument('-d', '--debug', help="Enable debugging output",
                         action='store_true')
-    parser.add_argument('port')
+    parser.add_argument('ports', metavar='PORT', help="port(s) to watch",
+                        nargs="+")
     args = parser.parse_args()
 
     # Build arguments for Serial constructor
     ser_args: dict[str, int | str | float] = {
-        "timeout": 0, "port": args.port, "baudrate": args.baud}
+        "timeout": 0, "baudrate": args.baud}
     match args.bits:
         case '5': ser_args['bytesize'] = serial.FIVEBITS
         case '6': ser_args['bytesize'] = serial.SIXBITS
@@ -95,15 +97,16 @@ def main() -> None:
         case 'xonxoff': ser_args['xonxoff'] = True
         case 'rtscts': ser_args['rtscts'] = True
         case 'dsrdtr': ser_args['dsrdtr'] = True
+        case _: pass  # make linter happy
 
     if args.init_bt:
         init_bt(debug=args.debug)
+
     try:
-        main_loop(
-            ser_args=ser_args, bt_uuid=str(args.bt_uuid), debug=args.debug)
+        main_loop(ports=args.ports, ser_args=ser_args,
+                  bt_uuid=str(args.bt_uuid), debug=args.debug)
     except KeyboardInterrupt:
-        if args.debug:
-            print("Caught KeyboardInterrupt")
+        print("Caught KeyboardInterrupt")
 
     parser.exit(0)
 
@@ -139,30 +142,45 @@ def init_bt(*, debug: bool):
 MAX_INTERVAL_NS: int = 1000000000
 
 
-def main_loop(*, ser_args: dict[str, Any], bt_uuid: str, debug: bool):
+def main_loop(  # pylint: disable=too-many-branches
+        *, ports: list[str], ser_args: dict[str, Any], bt_uuid: str,
+        debug: bool):
     notify = inotify.adapters.Inotify()
-    notify.add_watch(os.path.dirname(ser_args['port']))
+    watch = sorted(set(map(os.path.dirname, ports)))
+    for p in watch:
+        notify.add_watch(p)
     last_check_ns: int = time.monotonic_ns() - MAX_INTERVAL_NS - 1
     while True:
+        # rate limit this loop
         now_ns = time.monotonic_ns()
         if (sleep_ns := MAX_INTERVAL_NS - (now_ns - last_check_ns)) > 0:
             if debug:
                 print(f"Rate limiting sleeping {sleep_ns/1e9:.6f}s")
             time.sleep(sleep_ns/1e9)
         last_check_ns = now_ns
+        # check which port exists
+        the_port = None
+        for p in ports:
+            if os.path.exists(p):
+                the_port = p
+                break
+        else:  # no ports exist, so wait for inotify event
+            if debug:
+                print(f"No ports, watching {watch} for changes")
+            next(notify.event_gen(yield_nones=False))
+            continue
+        # try opening the port
         try:
-            ser = serial.Serial(**ser_args)  # type: ignore[arg-type]
+            ser = serial.Serial(port=the_port, **ser_args)
         except OSError as ex:
             if debug:
                 print(f"Ignoring {ex!r}")
-            # wait for an inotify event, which may be the port appearing
-            if not os.path.exists(ser_args['port']):
-                next(notify.event_gen(yield_nones=False))
         else:
+            print(f"Opened {the_port}, will now serve via Bluetooth")
             try:
                 with ser, bluetooth_ctx(uuid=bt_uuid, debug=debug) as bt:
                     bridge_ports(ser=ser, bt=bt, debug=debug)
-            except OSError as ex:  # from bluetooth_ctx
+            except OSError as ex:  # from bluetooth_ctx (bridge_ports catches)
                 if debug:
                     print(f"Ignoring {ex!r}")
 
