@@ -4,7 +4,7 @@ Serial-to-Bluetooth Bridge
 - Tested on Raspberry Pi Zero W with Raspberry Pi OS Lite 32-bit 2025-10-01 (trixie)
   - A fairly large electrolytic capacitor (e.g. 470-1000uF) on the 5V pins is useful
     to handle current spikes and prevent reboots when plugging in OTG cable.
-- Base Installation: <https://github.com/haukex/raspinotes/blob/e6d82750/BaseInstall.md>
+- Base Installation: <https://github.com/haukex/raspinotes/blob/c3727f9b/BaseInstall.md>
   - With overlay filesystem, ufw, proxychains
   - Without fail2ban, crontab, mail, unattended upgrades
   - In raspi-config, enable WLAN power saving
@@ -52,6 +52,10 @@ Debugging notes:
     ls -l /sys/bus/usb-serial/devices  #=> e.g. ".../usb1/1-1/1-1:..."
     echo '1-1' | sudo tee /sys/bus/usb/drivers/usb/unbind
     echo '1-1' | sudo tee /sys/bus/usb/drivers/usb/bind
+
+Cloning notes:
+
+- Set a new UUID in `/etc/systemd/system/bt-serial-bridge.service`, e.g. via the example command shown above.
 
 
 <!-- spell: ignore Mstrict Pairable bluetoothd fakepty icanon rfkill socat wlan trixie proxychains raspi raspinotes -->

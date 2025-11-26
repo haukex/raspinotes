@@ -17,7 +17,7 @@ These instructions assume you have knowledge of using a Raspberry Pi and Debian 
    - Raspberry Pi OS Lite 64-bit 2025-05-13 (bookworm)
    - Raspberry Pi Imager v1.9.6
    - Raspberry Pi Zero 2 W
-- November 2025 with
+- November 2025 (not all sections below tested!) with
    - Raspberry Pi OS Lite 32-bit 2025-10-01 (trixie)
    - Raspberry Pi Zero W
 
@@ -39,7 +39,8 @@ Basic Setup
          - WiFi
          - Locale settings
          - Enable SSH and set up key with "Allow public-key authentication only"
-         - Disable telemetry
+         - Disable telemetry (in newer versions of the Imager this is in "App Options")
+           and Raspberry Pi Connect (if offered)
 
       3. The following steps in this section assume you've got the resulting SD card mounted on a Linux system.
 
@@ -56,6 +57,9 @@ Basic Setup
 
    3. *Optional Procedure:* Protecting the SD card against wear and sudden power-offs
       by making root FS read-only ("overlay filesystem") with a writable data partition.
+
+      **TODO:** This currently **does not work** on the latest Raspberry Pi OS 2025-11-24; I need to
+      figure out what the problem is. See <https://github.com/raspberrypi/rpi-imager/issues/1320>.
 
       1. **Note** there is no point in setting up the "unattended upgrades" below,
          you'll have to do updates manually. Also, while `fail2ban` (below) will
@@ -76,9 +80,9 @@ Basic Setup
    1. Boot the Pi and log in with ssh user `pi`; you can make the login with this username
       automatic by putting the following in `~/.ssh/config` on your local machine:
 
-          Host yourpihostname
+          Host your-pi-hostname
               User pi
-              IdentityFile ~/.ssh/id_rsa_yourprivkeyfile
+              IdentityFile ~/.ssh/id_rsa_your-priv-keyfile
 
    2. `sudo raspi-config`
 
@@ -155,7 +159,7 @@ Basic Setup
 
       - _**Notice** & TODO: I haven't tested the following commands in a while_ - there may have been changes
         in more recent versions of the system packages that the following may need to be adjusted for.
-      - `sudo zgrep Ban /var/log/fail2ban.log* | perl -wMstrict -Mvars=%x -nale '$x{$F[7]}++}{print "$_\t$x{$_}" for grep {$x{$_}>1} sort { $x{$b}<=>$x{$a} } keys %x'`
+      - `sudo zgrep Ban /var/log/fail2ban.log* | perl -wM5.014 -Mvars=%x -nale '$x{$F[7]}++}{print "$_\t$x{$_}" for grep {$x{$_}>1} sort { $x{$b}<=>$x{$a} } keys %x'`
       - `sudo ufw deny from ADDRESS comment 'too many failed login attempts'`
 
 5. **Crontab** to broadcast RPi's address and name
@@ -333,6 +337,14 @@ Basic Setup
          EOF
 
 
+
+<!-- spell: ignore raspi Imager trixie rootfs crontabs gparted proxychains Autoclean DATAGRAM HMAC dpkg
+spell: ignore MACADDR Mlocal Mvars PARTUUID XKBLAYOUT XKBOPTIONS XKBVARIANT adduser authpriv dtoverlay
+spell: ignore autoremove banaction bantime bootro cpanm cpanminus crtscts dbpurgeage dialout dnsutils
+spell: ignore elinks findtime ftpd hwclock journalctl lftp liblocal mailx maxretry minicom moreutils
+spell: ignore mydestination myhostname mysync nale nmcli nmtui noatime nodeadkeys nonint nopasswd
+spell: ignore ntpsec overlaycheck overlayed overlayfs overlayroot parenb polkit postip pyinotify sclk
+spell: ignore socat stty svnf timesyncd tofrodos tshark udplisten venv vimrc wireshark wlan zgrep -->
 
 Author, Copyright, and License
 ------------------------------
