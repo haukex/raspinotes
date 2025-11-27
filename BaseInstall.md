@@ -310,6 +310,8 @@ Basic Setup
 
 9. **Miscellaneous**
 
+   - To prevent waiting for network on boot: `sudo systemctl mask NetworkManager-wait-online.service`
+
    - To add a Wi-Fi network later, either use `sudo nmtui`, or run `nmcli --ask device wifi connect <SSID>`
      (may need to first disconnect from Wi-Fi for the latter). Hint: `nmcli device wifi list`
 

@@ -17,6 +17,16 @@ NUL bytes, uses a lot of disk space, and can take a while. So instead, in this d
 focusing on how to do these things more efficiently, copying only those parts of the partitions
 holding the data.
 
+- If you have the overlay filesystem enabled, I suggest disabling it before pulling the images,
+  just to make later configuration easier.
+
+- If you flashed the SD card with the RPi Imager, then do the following on the RPi
+  to prevent `cloud-init` from modifying the system configuration on the clones.
+  - `sudo apt purge -y cloud-init && sudo apt autoremove -y`
+  - `sudo rm -rvf /etc/cloud/ /var/lib/cloud/ /boot/firmware/{user-data,network-config}`
+
+In the following, replace `/dev/sdX` with the source SD card's device name.
+
 - Partition table:
   - Dump the table via: `sudo sfdisk -d /dev/sdX | tee part_table`
   - To prevent conflicts, remove unique identifiers via:
@@ -37,20 +47,15 @@ holding the data.
   - `sudo e2image -pra /dev/sdX2 sdX2.img`
   - `sudo e2image -pra /dev/sdX3 sdX3.img` (optional if you have a `data` partition)
 
-- `sudo chown -c $USER:$USER *.img`
-- `chmod -c a-w *.img*`
+- Adjust permissions on image files:
+  - `sudo chown -c $USER:$USER *.img*`
+  - `chmod -c a-w *.img* part_table`
 
 - If you want to back up these files into one:
   - `tar --create --file rpi-images.tar --verbose --sparse -- part_table sdX?.img*`
-  - Alternatively, compressed, which can save a lot of space (in one test I ran, 50%):
+  - Alternatively, compressed, which can save a lot of space (in a few tests I ran, over 50%):
     `tar --create --file rpi-images.tgz -I 'gzip -9' --verbose --sparse -- part_table sdX?.img`
     (in this case it's more efficient if you didn't compress the FAT backup above)
-
-
-⚠️ Untested Stuff Follows
---------------------------
-
-This document is a work in progress and I have not tested the following yet.
 
 
 Writing Images to an SD Card
@@ -58,51 +63,68 @@ Writing Images to an SD Card
 
 **⚠️ DANGER ZONE:** Make sure you're writing to the correct device!
 
+Remove the original source SD card from your system, at least until new UUIDs are generated (below).
+In the following, replace `/dev/sdY` with the clone SD card's device name.
+
 - Partition table:
-  - `sudo sfdisk /dev/sdX < part_table`
-  - TODO: I don't see the "data" label in the sfdisk output, do I need to do that manually?
+  - `sudo sfdisk /dev/sdY < part_table`
 
 - FAT Partition:
-  - `zcat sdX1.img.gz | sudo dd of=/dev/sdX1 status=progress`
+  - `zcat sdX1.img.gz | sudo dd of=/dev/sdY1 status=progress`
+  - Alternatively, if it was uncompressed: `sudo dd if=sdX1.img of=/dev/sdY1 status=progress`
 
 - ext4 Partitions:
-  - `sudo e2image -pra sdX2.img /dev/sdX2`
-  - `sudo e2image -pra sdX3.img /dev/sdX3` (optional)
+  - `sudo e2image -pra sdX2.img /dev/sdY2`
+  - `sudo e2image -pra sdX3.img /dev/sdY3` (optional)
 
 
 Post-Clone Updates
 ------------------
 
-Mount the system ext4 partition on a Linux system.
+**⚠️ DANGER ZONE:** Make sure you're writing to the correct device and directories!
 
-- TODO: `sudo lsblk -o+PARTUUID,UUID /dev/sdX` and `sudo tune2fs -U random /dev/sdX1` for `.../etc/fstab` update?
-  - **and** adjust `root=PARTUUID=...` in `/boot/firmware/cmdline.txt` !
+In the following, replace `/dev/sdY` with the clone SD card's device name.
 
-- machine-id, Hostname
-  - TODO: Test `sudo systemd-firstboot --root=/media/... --hostname=... --setup-machine-id --force`
-  - TODO: Check that `/etc/hostname` *and* `/etc/hosts` were modified
+- Check the partition IDs via `sudo lsblk -o+PARTUUID,UUID,LABEL /dev/sdY`,
+  then generate new UUIDs as follows:
+  - `sudo fatlabel -ir /dev/sdY1`
+  - `sudo tune2fs -U random /dev/sdY2`
+  - `sudo tune2fs -U random /dev/sdY3`
+- Note: In case you need to adjust partition labels later, see `e2label` and `fatlabel`.
+  The usual partition labels are `bootfs` and `rootfs` (and the optional `data`).
 
-- SSH Host Keys
-  - `sudo rm .../etc/ssh/ssh_host_*`
+Mount the clone's FAT `bootfs` and ext4 `rootfs`. In the following, I will assume that
+they are mounted at `/media/USER/bootfs` and `/media/USER/rootfs`.
 
-- Bluetooth pairings
-  - `sudo bash -c 'rm -rf .../var/lib/bluetooth/[0-9A-Fa-f]*'`
-    (wildcard expansion needs to happen with root permissions)
+- `sudo lsblk -o+PARTUUID /dev/sdY`, then:
+  - `sudo vi /media/USER/bootfs/cmdline.txt` and edit `root=PARTUUID=...` to match the new `PARTUUID`
+  - `sudo vi /media/USER/rootfs/etc/fstab` and edit all of the `PARTUUID=` fields to match the new `PARTUUID`s
 
-- `sudo vi .../etc/machine-info` for `PRETTY_HOSTNAME` etc.
-- `sudo rm -rf .../var/log/journal/* .../var/log/* .../var/cache/* .../var/lib/systemd/random-seed`
+- `sudo ./clone-delete.sh /media/USER/rootfs` to delete various files that will be re-generated
 
-- TODO: Test: if the processor architectures are the same,
-  `sudo chroot /media/... /usr/sbin/make-ssl-cert generate-default-snakeoil --force-overwrite`
+- machine-id and Hostname
+  - `sudo systemd-firstboot --root=/media/USER/rootfs --hostname=HOSTNAME --setup-machine-id --force`
+  - `sudo vi /media/USER/rootfs/etc/hosts` and replace all instances of the old hostname there too
+
+- If you have this file, `sudo vi /media/USER/rootfs/etc/machine-info` and edit `PRETTY_HOSTNAME` etc.
 
 
 Post-Boot Updates on Clone
 --------------------------
 
-- SSL Certs (if the processor architectures are different)
-  - `sudo make-ssl-cert generate-default-snakeoil --force-overwrite`
-- SSH Keys should have been regenerated, but if you want to play it safe:
+- Regenerate SSH Host keys:
+  - `sudo rm -vf /etc/ssh/ssh_host_*` (Note: The ssh service doesn't re-generate these files on boot,
+    and will refuse to start if they're missing, which is why we don't do this until after the first
+    boot of the clone.)
   - `sudo dpkg-reconfigure openssh-server`
+  - `sudo systemctl restart ssh`
+
+- SSL Certs - only if you had/have the package `ssl-cert` installed:
+  - `sudo make-ssl-cert generate-default-snakeoil --force-overwrite`
+
+- Do any other customization steps needed for your system here.
+
+- If you had the overlay filesystem enabled, reenable it now.
 
 
 More Information
@@ -112,7 +134,7 @@ More Information
 - <https://wiki.archlinux.org/title/Disk_cloning#Versatile_cloning_solutions>
 
 
-<!-- spell: ignore PARTUUID blkid cmdline dhcpcd dpkg firstboot sfdisk zcat snakeoil -->
+<!-- spell: ignore PARTUUID blkid cmdline dhcpcd dpkg firstboot sfdisk zcat snakeoil fatlabel bootfs rootfs Imager autoremove -->
 
 Author, Copyright, and License
 ------------------------------
