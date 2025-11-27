@@ -38,7 +38,7 @@ Basic Setup
          - Hostname
          - Username (I usually stick to `pi` for consistency) and a strong password
          - WiFi
-         - Locale settings
+         - Locale settings (timezone, keyboard layout)
          - Enable SSH and set up key with "Allow public-key authentication only"
          - Disable telemetry (in newer versions of the Imager this is in "App Options")
            and Raspberry Pi Connect (if offered)
@@ -82,6 +82,13 @@ Basic Setup
 
 2. **At First Boot Procedures**
 
+   0. Note that recent versions of Raspberry Pi OS (2025-11-24) will boot, connect to the
+      network and allow the user to log in, but apparently still be doing background
+      initialization (?), and they will reboot one more time shortly afterwards, so I
+      recommend waiting for that before trying any of the following steps.
+      (I seem to remember the previous release, 2025-10-01, preventing the user from
+      logging in while it's initializing, so this may be a bug that may get fixed.)
+
    1. Boot the Pi and log in with ssh user `pi`; you can make the login with this username
       automatic by putting the following in `~/.ssh/config` on your local machine:
 
@@ -119,7 +126,7 @@ Basic Setup
 
       - Newer versions of Debian/Raspbian use `journalctl` and `/var/log/syslog` doesn't exist by default anymore,
         if you want to bring it back: `sudo apt install rsyslog`
-      - Edit `/etc/ssh/sshd_config` and set `PermitRootLogin no`
+      - `sudo vi /etc/ssh/sshd_config` and set `PermitRootLogin no`, `PasswordAuthentication no`, and `KbdInteractiveAuthentication no`
       - `sudo adduser $USER wireshark`
       - `perl -Mlocal::lib >>~/.profile`
       - Set up any files like `.bash_aliases`, `.vimrc`, etc.
