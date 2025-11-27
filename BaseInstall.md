@@ -18,7 +18,8 @@ These instructions assume you have knowledge of using a Raspberry Pi and Debian 
    - Raspberry Pi Imager v1.9.6
    - Raspberry Pi Zero 2 W
 - November 2025 (not all sections below tested!) with
-   - Raspberry Pi OS Lite 32-bit 2025-10-01 (trixie)
+   - Raspberry Pi OS Lite 32-bit 2025-11-24 (trixie)
+   - Raspberry Pi Imager v2.0.1
    - Raspberry Pi Zero W
 
 Basic Setup
@@ -58,8 +59,12 @@ Basic Setup
    3. *Optional Procedure:* Protecting the SD card against wear and sudden power-offs
       by making root FS read-only ("overlay filesystem") with a writable data partition.
 
-      **TODO:** This currently **does not work** on the latest Raspberry Pi OS 2025-11-24; I need to
-      figure out what the problem is. See <https://github.com/raspberrypi/rpi-imager/issues/1320>.
+      **TODO:** Doing this before first boot **no longer works** on the latest Raspberry Pi OS 2025-11-24.
+      There appears to be some issue with [RPi Imager](https://github.com/raspberrypi/rpi-imager/) in
+      combination with [cloud-init](https://cloudinit.readthedocs.io/) and resizing the root partition,
+      see e.g. raspberrypi/rpi-imager [#1320](https://github.com/raspberrypi/rpi-imager/issues/1320)
+      and [#1237](https://github.com/raspberrypi/rpi-imager/issues/1237). For now, the workaround is
+      shrinking the partition after first boot (added to notes below).
 
       1. **Note** there is no point in setting up the "unattended upgrades" below,
          you'll have to do updates manually. Also, while `fail2ban` (below) will
@@ -103,16 +108,17 @@ Basic Setup
    3. `sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && echo Done`
       (reboot afterward is usually necessary)
 
-   4. `sudo apt install --no-install-recommends aptitude ufw vim git screen moreutils minicom socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-venv python3-dev`
+   4. `sudo apt install --no-install-recommends aptitude ufw vim git screen moreutils minicom socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-venv python3-dev overlayroot`
       - These are my preferred tools on top of the Lite edition, you may of course modify this list as you like
       - Note: The installation of `tshark` will ask whether non-superusers should be able to capture packets, I usually say yes
-      - Note: The following packages were already installed on the Lite edition last time I checked: `zip build-essential`
+      - Note: The following packages were already installed on the Lite edition last time I checked: `zip build-essential python3-venv`
         (but it doesn't hurt to list them above anyway)
+      - Note: Installing `overlayroot` now, along with everything else, makes enabling the overlay filesystem later faster; you may omit it here if you wish.
 
    5. Misc.
 
       - Newer versions of Debian/Raspbian use `journalctl` and `/var/log/syslog` doesn't exist by default anymore,
-        to bring it back: `sudo apt install rsyslog`
+        if you want to bring it back: `sudo apt install rsyslog`
       - Edit `/etc/ssh/sshd_config` and set `PermitRootLogin no`
       - `sudo adduser $USER wireshark`
       - `perl -Mlocal::lib >>~/.profile`
@@ -224,7 +230,14 @@ Basic Setup
 
    5. Enable (and disable) with `sudo dpkg-reconfigure --priority=low unattended-upgrades`
 
-8. **Overlay Filesystem** (*optional*, continued from above!)
+8. **Overlay Filesystem** (*optional!*) Protecting the SD card against wear and sudden power-offs
+   by making root FS read-only ("overlay filesystem") with a writable data partition.
+
+   0. Assuming you didn't do this before first boot (see the earlier notes on that), power down the RPi,
+      put the SD card in a different Linux system, and then, using `gparted`, shrink the root filesystem
+      on the SD card to the desired size, e.g. 16GB, and then create a new ext4 primary partition covering
+      the rest of the space on the SD card, and label it e.g. `data` (at least that's what the rest of
+      these instructions assume). Put the SD card back in the RPi and power it back up.
 
    1. Create an `/etc/fstab` entry for the `data` partition:
 
@@ -281,7 +294,8 @@ Basic Setup
         - Two steps are required because disabling the read-only boot partition requires editing `/etc/fstab`,
           which can't be done when the overlay filesystem is enabled.
         - This is also why I'm not recommending `sudo raspi-config nonint do_overlayfs 1` for this step,
-          since that doesn't warn about it not disabling the read-only boot partition.
+          since that doesn't warn about it not disabling the read-only boot partition
+          (see e.g. <https://github.com/RPi-Distro/raspi-config/issues/284>).
 
       - To get the current status,
         `for x in get_overlay_conf get_bootro_conf get_overlay_now get_bootro_now; do echo -n "$x="; sudo raspi-config nonint $x; done`
@@ -344,7 +358,8 @@ spell: ignore autoremove banaction bantime bootro cpanm cpanminus crtscts dbpurg
 spell: ignore elinks findtime ftpd hwclock journalctl lftp liblocal mailx maxretry minicom moreutils
 spell: ignore mydestination myhostname mysync nale nmcli nmtui noatime nodeadkeys nonint nopasswd
 spell: ignore ntpsec overlaycheck overlayed overlayfs overlayroot parenb polkit postip pyinotify sclk
-spell: ignore socat stty svnf timesyncd tofrodos tshark udplisten venv vimrc wireshark wlan zgrep -->
+spell: ignore socat stty svnf timesyncd tofrodos tshark udplisten venv vimrc wireshark wlan zgrep
+spell: ignore raspberrypi cryptsetup -->
 
 Author, Copyright, and License
 ------------------------------
