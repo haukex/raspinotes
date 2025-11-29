@@ -194,7 +194,7 @@ Basic Setup
    5. Alternative: You can use `postip.pl` from this repository in the `crontab` to send an
       HTTP request instead of a UDP packet; remember to use the full pathname to the script
       and adjust the variables at the top of the script as necessary.
-      TODO: The HMAC-SHA256 signature provided by the script can be used by the server to verify the authenticity.
+      The HMAC-SHA256 signature provided by the script can be used by the server to verify the authenticity.
 
 6. **Mail**: Configure Postfix either as "Local only" or "Internet Site" as appropriate in the following steps:
 

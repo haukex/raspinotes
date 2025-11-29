@@ -1,29 +1,29 @@
 #!/usr/bin/perl
 use warnings;
-use strict;
+use 5.014;  # strict, HTTP::Tiny, JSON::PP
 # should run on vanilla Perl, use core modules only
 use Sys::Hostname 'hostname';
 use Digest::SHA 'hmac_sha256_base64';
+use JSON::PP ();
+use HTTP::Tiny ();
 
-my $SECRET = 'password';  # for signature, so server can verify authenticity
-my $BASEURL = 'https://example.com/hellorpi/'; # end with slash!
+my $SECRET = 'secret';  # FIXME: CHANGE THIS - for signature, so server can verify authenticity
+my $URL = 'https://example.com/hellorpi';
 
 # IPv4 only at the moment:
-my @ips = grep { /\A\d+(?:\.\d+){3}\z/ } split ' ', `/usr/bin/hostname -I`;
-die "hostname -I failed with \$?=$?\n" if $?;
+my @ips = sort grep { /\A\d+(?:\.\d+){3}\z/ } split ' ', `/usr/bin/hostname -I`;
+die "`hostname -I` failed with \$?=$?\n" if $?;
 exit unless @ips;
 
 my $host = hostname;
 die "unexpected hostname '$host'\n" unless $host=~/\A[A-Za-z0-9\.\-\_]+\z/;
 
-my $url = join '/', $host, @ips;
+my $sig = hmac_sha256_base64(join("\0", $host, @ips), $SECRET);
+$sig .= '=' while length($sig) % 4;  # pad
 
-my $sig = hmac_sha256_base64($url, $SECRET);
-$sig =~ tr#+/#-_#;  # like Python's base64.urlsafe_b64encode
-#$sig =~ s/=+$//g;  # not actually needed, docs say there won't be padding
+my $resp = HTTP::Tiny->new->request('POST', $URL, { content=>
+    JSON::PP->new->ascii->canonical->pretty->encode(
+        { host => $host, ips => \@ips, sig => $sig }) });
+die "POST $URL => $resp->{status} $resp->{reason}\n" unless $resp->{success};
 
-my @cmd = ('curl','--silent','--max-time','5',
-	'--fail','--fail-early','--show-error',
-	'--header','Content-Type: application/octet-stream',
-	'--data-raw',$sig,"$BASEURL$url",'--output','/dev/null');
-system(@cmd) and die "@cmd\nFAILED with \$?=$?, \$!=$!\n";
+# spell: ignore hmac
