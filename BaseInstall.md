@@ -115,7 +115,7 @@ Basic Setup
    3. `sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && echo Done`
       (reboot afterward is usually necessary)
 
-   4. `sudo apt install --no-install-recommends aptitude ufw vim git screen moreutils minicom socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl perl-doc python3-pip python3-venv python3-dev overlayroot`
+   4. `sudo apt install --no-install-recommends aptitude ufw vim git screen moreutils minicom socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl libio-socket-ssl-perl perl-doc python3-pip python3-venv python3-dev overlayroot`
       - These are my preferred tools on top of the Lite edition, you may of course modify this list as you like
       - Note: The installation of `tshark` will ask whether non-superusers should be able to capture packets, I usually say yes
       - Note: The following packages were already installed on the Lite edition last time I checked: `zip build-essential python3-venv`
@@ -124,8 +124,6 @@ Basic Setup
 
    5. Misc.
 
-      - Newer versions of Debian/Raspbian use `journalctl` and `/var/log/syslog` doesn't exist by default anymore,
-        if you want to bring it back: `sudo apt install rsyslog`
       - `sudo vi /etc/ssh/sshd_config` and set `PermitRootLogin no`, `PasswordAuthentication no`, and `KbdInteractiveAuthentication no`
       - `sudo adduser $USER wireshark`
       - `perl -Mlocal::lib >>~/.profile`
@@ -259,7 +257,7 @@ Basic Setup
       sudden power offs (make sure you understand the implications of this
       depending on the type of flash memory you're using).
 
-   2. `sudo mkdir -v /data/pi`, `sudo chown pi:pi /data/pi`, and `ln -svnf /data/pi /home/pi/data`
+   2. `sudo mkdir -v /data/$USER`, `sudo chown -c $USER:$USER /data/$USER`, and `ln -svnf /data/$USER $HOME/data`
 
    3. If you set up `postfix` and `alpine` above, do this:
 
@@ -312,11 +310,20 @@ Basic Setup
 
    - To prevent waiting for network on boot: `sudo systemctl mask NetworkManager-wait-online.service`
 
+   - The RPi Imager is very useful in that it allows provisioning a headless RPi with networking and SSH set up,
+     but sometimes, `cloud-init`, which the RPi Imager uses, can get in the way of making modifications, e.g.
+     when cloning SD cards. Therefore, it can be removed after it is no longer needed:
+     - `sudo apt purge -y cloud-init && sudo apt autoremove -y`
+     - `sudo rm -rvf /etc/cloud/ /var/lib/cloud/ /boot/firmware/{user-data,network-config}`
+
    - To add a Wi-Fi network later, either use `sudo nmtui`, or run `nmcli --ask device wifi connect <SSID>`
      (may need to first disconnect from Wi-Fi for the latter). Hint: `nmcli device wifi list`
 
    - Newer OSes generally have `systemd-timesyncd` installed, so `ntp` isn't really necessary anymore, but
      in case it is: `sudo apt install --no-install-recommends ntp` and edit `/etc/ntpsec/ntp.conf` as appropriate.
+
+   - Newer versions of Debian/Raspbian use `journalctl` and `/var/log/syslog` doesn't exist by default anymore,
+      if you want to bring it back: `sudo apt install rsyslog`
 
    - For RTC, e.g. DS3231 3.3V compatible breakout board: Wire up RTC as appropriate (3.3V, GND, SCL, SDA),
      add `dtoverlay=i2c-rtc,ds323` to `/boot/firmware/config.txt`, reboot,
@@ -344,9 +351,6 @@ Basic Setup
      - `minicom -D/dev/ttyS0`
      - `screen /dev/ttyS0 19200`
 
-   - Making a backup of an SD card from another system (where `/dev/sdb` is the SD card):
-     `sudo dd if=/dev/sdb | gzip -9 >backup.img.gz`
-
    - Though the following is a **security risk**, it may be acceptable in certain limited circumstances,
      such as devices not connected to a network. To prevent being prompted for a password when doing
      administrative tasks (esp. in the GUI):
@@ -368,7 +372,7 @@ spell: ignore elinks findtime ftpd hwclock journalctl lftp liblocal mailx maxret
 spell: ignore mydestination myhostname mysync nale nmcli nmtui noatime nodeadkeys nonint nopasswd
 spell: ignore ntpsec overlaycheck overlayed overlayfs overlayroot parenb polkit postip pyinotify sclk
 spell: ignore socat stty svnf timesyncd tofrodos tshark udplisten venv vimrc wireshark wlan zgrep
-spell: ignore raspberrypi cryptsetup -->
+spell: ignore raspberrypi cryptsetup libio -->
 
 Author, Copyright, and License
 ------------------------------

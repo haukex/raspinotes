@@ -20,42 +20,33 @@ holding the data.
 - If you have the overlay filesystem enabled, I suggest disabling it before pulling the images,
   just to make later configuration easier.
 
-- If you flashed the SD card with the RPi Imager, then do the following on the RPi
-  to prevent `cloud-init` from modifying the system configuration on the clones.
-  - `sudo apt purge -y cloud-init && sudo apt autoremove -y`
-  - `sudo rm -rvf /etc/cloud/ /var/lib/cloud/ /boot/firmware/{user-data,network-config}`
+- Remove `cloud-init` as per my [BaseInstall notes](./BaseInstall.md).
 
 In the following, replace `/dev/sdX` with the source SD card's device name.
 
 - Partition table:
   - Dump the table via: `sudo sfdisk -d /dev/sdX | tee part_table`
   - To prevent conflicts, remove unique identifiers via:
-    `perl -wM5.014 -i -ne 's/,\h*uuid=[-0-9a-fA-F]*\b//g;/^label-id/||print' part_table`
+    `perl -wM5.014 -i.orig -ne 's/,\h*uuid=[-0-9a-fA-F]*\b//g;/^label-id/||print' part_table`
 
 - RPi FAT `/boot` Partition:
-  - This partition is usually not very big (~100 of 512MB used), so I won't be doing a sparse copy
-    here, just a compressed one.
-  - `sudo dd if=/dev/sdX1 status=progress | gzip -9 >sdX1.img.gz`
-  - Alternatively, uncompressed, for example if you want to create a compressed backup anyway (as
-    shown below): `sudo dd if=/dev/sdX1 of=sdX1.img status=progress` (or just `gunzip` the `.gz`)
+  - `sudo partclone.fat32 --clone --source /dev/sdX1 --output sdX1.pc.img`
+  - **Note** this is a "special" format used by partclone, not an actual image!
 
 - ext4 Partition(s):
   - The `e2image` tool can create sparse images. **Note** that with `ls`, the file sizes will look
     like they have their original size, but `du` shows they are actually taking up much less space.
     **Warning:** If you use tools that can't handle sparse files, they may balloon to the listed
     size, so be careful!
-  - `sudo e2image -pra /dev/sdX2 sdX2.img`
-  - `sudo e2image -pra /dev/sdX3 sdX3.img` (optional if you have a `data` partition)
+  - `sudo e2image -pra /dev/sdX2 sdX2.sparse.img`
+  - `sudo e2image -pra /dev/sdX3 sdX3.sparse.img` (optional if you have a `data` partition)
 
 - Adjust permissions on image files:
-  - `sudo chown -c $USER:$USER *.img*`
-  - `chmod -c a-w *.img* part_table`
+  - `sudo chown -c $USER:$USER *.img`
+  - `chmod -c 440 *.img part_table`
 
 - If you want to back up these files into one:
-  - `tar --create --file rpi-images.tar --verbose --sparse -- part_table sdX?.img*`
-  - Alternatively, compressed, which can save a lot of space (in a few tests I ran, over 50%):
-    `tar --create --file rpi-images.tgz -I 'gzip -9' --verbose --sparse -- part_table sdX?.img`
-    (in this case it's more efficient if you didn't compress the FAT backup above)
+  `tar --create --file rpi-images.sparse.tgz -I 'gzip -9' --verbose --sparse -- part_table *.img`
 
 
 Writing Images to an SD Card
@@ -70,12 +61,16 @@ In the following, replace `/dev/sdY` with the clone SD card's device name.
   - `sudo sfdisk /dev/sdY < part_table`
 
 - FAT Partition:
-  - `zcat sdX1.img.gz | sudo dd of=/dev/sdY1 status=progress`
-  - Alternatively, if it was uncompressed: `sudo dd if=sdX1.img of=/dev/sdY1 status=progress`
+  - `sudo partclone.fat32 --restore --source sdX1.pc.img --output /dev/sdY1`
 
 - ext4 Partitions:
-  - `sudo e2image -pra sdX2.img /dev/sdY2`
-  - `sudo e2image -pra sdX3.img /dev/sdY3` (optional)
+  - `sudo e2image -pra sdX2.sparse.img /dev/sdY2`
+  - `sudo e2image -pra sdX3.sparse.img /dev/sdY3` (optional)
+
+- Just to play it safe, check the filesystems:
+  - `sudo fsck.fat -v /dev/sdY1`
+  - `sudo fsck.ext4 -f /dev/sdY2`
+  - `sudo fsck.ext4 -f /dev/sdY3`
 
 
 Post-Clone Updates
@@ -94,37 +89,38 @@ In the following, replace `/dev/sdY` with the clone SD card's device name.
   The usual partition labels are `bootfs` and `rootfs` (and the optional `data`).
 
 Mount the clone's FAT `bootfs` and ext4 `rootfs`. In the following, I will assume that
-they are mounted at `/media/USER/bootfs` and `/media/USER/rootfs`.
+they are mounted at `/media/$USER/bootfs` and `/media/$USER/rootfs`.
 
 - `sudo lsblk -o+PARTUUID /dev/sdY`, then:
-  - `sudo vi /media/USER/bootfs/cmdline.txt` and edit `root=PARTUUID=...` to match the new `PARTUUID`
-  - `sudo vi /media/USER/rootfs/etc/fstab` and edit all of the `PARTUUID=` fields to match the new `PARTUUID`s
+  - `sudo vi /media/$USER/bootfs/cmdline.txt` and edit `root=PARTUUID=...` to match the new `PARTUUID`
+  - `sudo vi /media/$USER/rootfs/etc/fstab` and edit all of the `PARTUUID=` fields to match the new `PARTUUID`s
 
-- `sudo ./clone-delete.sh /media/USER/rootfs` to delete various files that will be re-generated
+- `sudo ./clone-delete.sh /media/$USER/rootfs` to delete various files that will be re-generated
 
 - machine-id and Hostname
-  - `sudo systemd-firstboot --root=/media/USER/rootfs --hostname=HOSTNAME --setup-machine-id --force`
-  - `sudo vi /media/USER/rootfs/etc/hosts` and replace all instances of the old hostname there too
+  - `sudo systemd-firstboot --root=/media/$USER/rootfs --hostname=HOSTNAME --setup-machine-id --force`
+  - `sudo vi /media/$USER/rootfs/etc/hosts` and replace all instances of the old hostname there too
 
-- If you have this file, `sudo vi /media/USER/rootfs/etc/machine-info` and edit `PRETTY_HOSTNAME` etc.
+- If you have this file, `sudo vi /media/$USER/rootfs/etc/machine-info` and edit `PRETTY_HOSTNAME` etc.
+
+- Do any other customization steps that you might need and can do before first boot here.
 
 
 Post-Boot Updates on Clone
 --------------------------
 
 - Regenerate SSH Host keys:
-  - `sudo rm -vf /etc/ssh/ssh_host_*` (Note: The ssh service doesn't re-generate these files on boot,
-    and will refuse to start if they're missing, which is why we don't do this until after the first
-    boot of the clone.)
-  - `sudo dpkg-reconfigure openssh-server`
-  - `sudo systemctl restart ssh`
+  - `sudo rm -v /etc/ssh/ssh_host_*` (Note: The ssh service doesn't re-generate these files on boot, and will
+    refuse to start if they're missing, which is why we don't do this until after the first boot of the clone.)
+  - `sudo dpkg-reconfigure openssh-server && sudo systemctl restart ssh`
 
 - SSL Certs - only if you had/have the package `ssl-cert` installed:
   - `sudo make-ssl-cert generate-default-snakeoil --force-overwrite`
 
 - Do any other customization steps needed for your system here.
 
-- If you had the overlay filesystem enabled, reenable it now.
+- If you had the overlay filesystem enabled, reenable it now
+  (`sudo raspi-config nonint do_overlayfs 0`).
 
 
 More Information
@@ -134,7 +130,8 @@ More Information
 - <https://wiki.archlinux.org/title/Disk_cloning#Versatile_cloning_solutions>
 
 
-<!-- spell: ignore PARTUUID blkid cmdline dhcpcd dpkg firstboot sfdisk zcat snakeoil fatlabel bootfs rootfs Imager autoremove -->
+<!-- spell: ignore PARTUUID blkid cmdline dhcpcd dpkg firstboot sfdisk zcat snakeoil fatlabel bootfs
+spell: ignore rootfs Imager autoremove partclone nonint overlayfs raspi -->
 
 Author, Copyright, and License
 ------------------------------
