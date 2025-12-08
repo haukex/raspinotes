@@ -326,7 +326,7 @@ Basic Setup
       if you want to bring it back: `sudo apt install rsyslog`
 
    - For RTC, e.g. DS3231 3.3V compatible breakout board: Wire up RTC as appropriate (3.3V, GND, SCL, SDA),
-     add `dtoverlay=i2c-rtc,ds323` to `/boot/firmware/config.txt`, reboot,
+     add `dtoverlay=i2c-rtc,ds3231` to `/boot/firmware/config.txt`, reboot,
      and `sudo apt install util-linux-extra` for `hwclock` command, to test `sudo hwclock --test`
 
    - If the Raspberry Pi doesn't have direct internet access after installation:
