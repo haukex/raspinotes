@@ -28,22 +28,22 @@ from textwrap import dedent
 from typing import Any
 from uuid import UUID
 import subprocess
+import threading
 import argparse
 import os.path
 import select
 import socket
+import queue
 import time
+import enum
 import io
-import serial
-import bluetooth
-import inotify.adapters
+import serial            # https://github.com/pyserial/pyserial
+import bluetooth         # https://github.com/pybluez/pybluez
+import inotify.adapters  # https://github.com/dsoprea/PyInotify
 
-# spell: ignore RFCOMM dsrdtr rtscts xonxoff baudrate bytesize
+# spell: ignore RFCOMM dsrdtr rtscts xonxoff baudrate bytesize actpwr
 # spell: ignore FIVEBITS SIXBITS SEVENBITS EIGHTBITS stopbits inotify
 # spell: ignore bluetoothctl btmgmt hciconfig pairable piscan sdptool
-
-# TODO: It would be cool if this server could accept connections on a
-# second port, where it only receives serial port configuration options.
 
 
 def main() -> None:
@@ -139,7 +139,77 @@ def init_bt(*, debug: bool):
     cmd(['/usr/bin/btmgmt', 'io-cap', '3'], stdin='')
 
 
-MAX_INTERVAL_NS: int = 1000000000
+LED_PATH = '/sys/class/leds/ACT'
+
+
+class LedState(enum.Enum):
+    """LED States."""
+    NO_SERIAL = enum.auto()
+    WAITING_BLUE = enum.auto()
+    CONNECTED = enum.auto()
+    #: For internal use only, for stopping the LED thread.
+    STOP = enum.auto()
+
+
+class LedControlThread(threading.Thread):
+    """Thread that blinks the LED."""
+
+    def __init__(self, q: queue.Queue[LedState]):
+        self._q = q
+        super().__init__()
+
+    def run(self):
+        with open(os.path.join(LED_PATH, 'max_brightness'), 'rb') as fh:
+            on_st = str(int(fh.read())).encode('ASCII')
+        off_st = b'1' if on_st == b'0' else b'0'
+        _cur_on: bool = False  # only for use in toggle() below
+
+        with open(os.path.join(LED_PATH, 'trigger'), 'wb') as fh:
+            fh.write(b'none\n')
+
+        def toggle(force: bool | None = None):
+            nonlocal _cur_on
+            if force is not None:
+                _cur_on = force
+            else:
+                _cur_on = not _cur_on
+            with open(os.path.join(LED_PATH, 'brightness'), 'wb') as fh:
+                fh.write((on_st if _cur_on else off_st) + b'\n')
+        toggle()
+
+        state: LedState = LedState.NO_SERIAL
+        while state != LedState.STOP:
+            try:
+                state = self._q.get_nowait()
+            except queue.Empty:
+                pass
+            if state == LedState.NO_SERIAL:  # Blink rapidly
+                time.sleep(0.1)
+                toggle()
+            elif state == LedState.WAITING_BLUE:  # Solid on
+                toggle(True)
+                time.sleep(0.5)  # rate limit this loop (!)
+            elif state == LedState.CONNECTED:  # Blink slowly
+                time.sleep(0.5)
+                toggle()
+
+        with open(os.path.join(LED_PATH, 'trigger'), 'wb') as fh:
+            fh.write(b'actpwr\n')  # this appears to be the default
+
+
+@contextmanager
+def led_control():
+    q: queue.Queue[LedState] = queue.Queue()
+    thr = LedControlThread(q)
+    thr.start()
+    try:
+        yield q
+    finally:
+        q.put(LedState.STOP)
+        thr.join(3)
+
+
+MAX_INTERVAL_NS: int = 1000000000  # 1s
 
 
 def main_loop(  # pylint: disable=too-many-branches
@@ -149,40 +219,47 @@ def main_loop(  # pylint: disable=too-many-branches
     watch = sorted(set(map(os.path.dirname, ports)))
     for p in watch:
         notify.add_watch(p)
-    last_check_ns: int = time.monotonic_ns() - MAX_INTERVAL_NS - 1
-    while True:
-        # rate limit this loop
-        now_ns = time.monotonic_ns()
-        if (sleep_ns := MAX_INTERVAL_NS - (now_ns - last_check_ns)) > 0:
-            if debug:
-                print(f"Rate limiting sleeping {sleep_ns/1e9:.6f}s")
-            time.sleep(sleep_ns/1e9)
-        last_check_ns = now_ns
-        # check which port exists
-        the_port = None
-        for p in ports:
-            if os.path.exists(p):
-                the_port = p
-                break
-        else:  # no ports exist, so wait for inotify event
-            if debug:
-                print(f"No ports, watching {watch} for changes")
-            next(notify.event_gen(yield_nones=False))
-            continue
-        # try opening the port
-        try:
-            ser = serial.Serial(port=the_port, **ser_args)
-        except OSError as ex:
-            if debug:
-                print(f"Ignoring {ex!r}")
-        else:
-            print(f"Opened {the_port}, will now serve via Bluetooth")
+    with led_control() as blinker:
+        blinker.put(LedState.NO_SERIAL)
+        last_check_ns: int = time.monotonic_ns() - MAX_INTERVAL_NS - 1
+        while True:
+            # rate limit this loop
+            now_ns = time.monotonic_ns()
+            if (sleep_ns := MAX_INTERVAL_NS - (now_ns - last_check_ns)) > 0:
+                if debug:
+                    print(f"Rate limiting sleeping {sleep_ns/1e9:.6f}s")
+                time.sleep(sleep_ns/1e9)
+            last_check_ns = now_ns
+            # check which port exists
+            the_port: str | None = None
+            for p in ports:
+                if os.path.exists(p):
+                    the_port = p
+                    break
+            else:  # no ports exist, so wait for inotify event
+                if debug:
+                    print(f"No ports, watching {watch} for changes")
+                blinker.put(LedState.NO_SERIAL)
+                next(notify.event_gen(yield_nones=False))
+                continue
+            # try opening the port
             try:
-                with ser, bluetooth_ctx(uuid=bt_uuid, debug=debug) as bt:
-                    bridge_ports(ser=ser, bt=bt, debug=debug)
-            except OSError as ex:  # from bluetooth_ctx (bridge_ports catches)
+                ser = serial.Serial(port=the_port, **ser_args)
+            except OSError as ex:
                 if debug:
                     print(f"Ignoring {ex!r}")
+            else:
+                print(f"Opened {the_port}, will now serve via Bluetooth")
+                blinker.put(LedState.WAITING_BLUE)
+                try:
+                    with ser, bluetooth_ctx(uuid=bt_uuid, debug=debug) as bt:
+                        blinker.put(LedState.CONNECTED)
+                        bridge_ports(ser=ser, bt=bt, debug=debug)
+                except OSError as ex:  # from bluetooth_ctx (not bridge_ports)
+                    if debug:
+                        print(f"Ignoring {ex!r}")
+                finally:
+                    blinker.put(LedState.WAITING_BLUE)
 
 
 @contextmanager

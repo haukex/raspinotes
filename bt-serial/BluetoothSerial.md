@@ -61,6 +61,12 @@ Cloning notes:
 - Set a new `PRETTY_HOSTNAME` in `/etc/machine-info`.
 - Set a new UUID in `/etc/systemd/system/bt-serial-bridge.service`, e.g. via the example command shown above.
 
+TODO:
+
+- Consider putting `/var/lib/bluetooth` on the `/data` partition so pairings are remembered.
+- Provide a way to configure the serial port parameters. For example, a web interface, or perhaps `bt_serial_bridge.py`
+  could accept connections on a second port, where it only receives serial port configuration options?
+
 
 <!-- spell: ignore Pairable bluetoothd fakepty icanon rfkill socat wlan trixie proxychains raspi raspinotes mysync -->
 
