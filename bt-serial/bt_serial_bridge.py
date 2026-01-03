@@ -270,10 +270,10 @@ def bluetooth_ctx(*, uuid: str, debug: bool):
     server_sock.listen(1)
 
     bluetooth.advertise_service(
-        server_sock, "SerialBridge", service_id=uuid,
-        service_classes=[uuid, bluetooth.SERIAL_PORT_CLASS],
+        sock=server_sock, name=uuid, service_id=uuid,
+        service_classes=[bluetooth.SERIAL_PORT_CLASS],
         profiles=[bluetooth.SERIAL_PORT_PROFILE],
-        description="Serial-to-Bluetooth Bridge")
+        provider="BTSerialBridge", description="Serial-to-Bluetooth Bridge")
 
     if debug:
         print(
@@ -281,6 +281,11 @@ def bluetooth_ctx(*, uuid: str, debug: bool):
             f"{server_sock.getsockname()}...")
     bt_sock, client_info = server_sock.accept()
     print(f"Accepted connection from {client_info}")
+    # Note that `BluetoothSocket` objects *wrap* a `socket` object:
+    # https://github.com/pybluez/pybluez/blob/82cbba8a/bluetooth/bluez.py#L233
+    # Also note Serial objects are custom objects, but on POSIX (only!) they
+    # have a fileno:
+    # https://github.com/pyserial/pyserial/blob/911a0b8c/serial/serialposix.py#L806
 
     try:
         yield bt_sock
@@ -291,6 +296,8 @@ def bluetooth_ctx(*, uuid: str, debug: bool):
 
 
 def bridge_ports(*, ser: serial.Serial, bt: socket.socket, debug: bool):
+    # TODO: consider switching to asyncio.
+    # Hints: `asyncio.loop.add_reader`, `loop.sock_recv` etc.
     keep_running = True
     while keep_running:
         try:
@@ -311,7 +318,7 @@ def bridge_ports(*, ser: serial.Serial, bt: socket.socket, debug: bool):
                     if debug:
                         print(f"Serial -> BT: {data!r}")
                     if data:
-                        bt.send(data)
+                        bt.sendall(data)
                     elif not ser.is_open:
                         print('Stopping b/c of Serial disconnect')
                         keep_running = False

@@ -66,6 +66,8 @@ TODO:
 - Consider putting `/var/lib/bluetooth` on the `/data` partition so pairings are remembered.
 - Provide a way to configure the serial port parameters. For example, a web interface, or perhaps `bt_serial_bridge.py`
   could accept connections on a second port, where it only receives serial port configuration options?
+  - Consider in-band AT commands as per [ITU-T V.250](https://www.itu.int/rec/T-REC-V.250-200307-I/en)
+    - `(1sec)+++(1sec)` (break), `AT+IPR=(baud)`, `AT+ICF=(data/stop/parity)`, `AT+IFC=(flow ctrl)`, `ATO` (resume)
 
 
 <!-- spell: ignore Pairable bluetoothd fakepty icanon rfkill socat wlan trixie proxychains raspi raspinotes mysync -->
