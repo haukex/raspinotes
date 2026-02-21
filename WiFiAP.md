@@ -39,38 +39,62 @@ and tested on the new Bookworm-based Raspberry Pi OS Lite.
     (it apparently doesn't support changing the `autoconnect` settings).
 
 
+Making the RPi a NAT Access Point for its Ethernet
+--------------------------------------------------
+
+Assuming you're *not* using UFW! Otherwise, please see [my USB LTE Modem notes](./USB-LTE-Modem.md).
+
+1. Checks
+   - Ensure `net.ipv4.ip_forward=1` is on: `cat /proc/sys/net/ipv4/ip_forward`.
+     If not, add a file in `/etc/sysctl.d` with that line.
+   - `sudo nmcli c show Hotspot | grep ip4v.method` should show `shared`.
+2. Configure NAT with nftables
+   - `sudo nft add table ip nat`
+   - `sudo nft 'add chain ip nat postrouting { type nat hook postrouting priority 100 ; }'`
+   - `sudo nft add rule ip nat postrouting oifname eth0 masquerade`
+3. Configure Forwarding Rules
+   - `sudo nft add table ip filter`
+   - `sudo nft 'add chain ip filter forward { type filter hook forward priority 0; policy accept; }'`
+   - `sudo nft add rule ip filter forward ct state established,related accept`
+   - `sudo nft add rule ip filter forward iifname wlan0 oifname eth0 accept`
+4. Persist Changes
+   - `sudo nft list ruleset | sudo tee -a /etc/nftables.conf`
+   - `cat /etc/nftables.conf` and read it to make sure it makes sense
+   - `sudo systemctl enable nftables`
+
+
 Previous Manual Instructions
 ----------------------------
 
 **Unmaintained:** Assuming the above `nmcli` method continues to work well for me, I will eventually delete this section.
 
 - Initial steps
-  
+
       sudo apt-get install hostapd dnsmasq
       sudo systemctl stop dnsmasq
       sudo systemctl stop hostapd
       sudo cp /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
       sudo ufw allow DNS
       sudo ufw allow from any port 68 to any port 67 proto udp comment DHCP
-  
+
 - `sudo vi /etc/dhcpcd.conf` and add the lines:
-  
+
       interface wlan0
       static ip_address=192.168.42.1/24
       static domain_name_servers=192.168.42.1
       nohook wpa_supplicant
-  
+
 - `sudo vi /etc/dnsmasq.conf` and add the lines:
-  
+
       interface=wlan0
       domain-needed
       bogus-priv
       dhcp-range=192.168.42.100,192.168.42.150
       domain=internal
       address=/YOURHOSTNAME.internal/192.168.42.1
-  
+
 - `sudo vi /etc/hostapd/hostapd.conf` and create or replace contents with:
-  
+
       interface=wlan0
       driver=nl80211
       ssid=YOUR_SSID_HERE
@@ -86,15 +110,15 @@ Previous Manual Instructions
       wpa_key_mgmt=WPA-PSK
       wpa_pairwise=TKIP
       rsn_pairwise=CCMP
-  
+
 - `sudo vi /etc/default/hostapd` and set
   `DAEMON_CONF="/etc/hostapd/hostapd.conf"`
-  
+
 - Start things up:
-  
+
       sudo systemctl unmask hostapd
       sudo reboot
-  
+
 - To disable temporarily:
   - `sudo systemctl disable hostapd`
   - `sudo vi /etc/dhcpcd.conf` and comment out the lines added above
