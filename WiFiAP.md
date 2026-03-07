@@ -31,12 +31,17 @@ and tested on the new Bookworm-based Raspberry Pi OS Lite.
   If you don't want to keep the client connection, then you can simply delete it,
   and the above `autoconnect-priority` settings are not needed.
 
+- If there are files in `/etc/netplan` that cause connections to be reconfigured on every reboot,
+  read them first to check, but it is usually safe to delete them. Also, see the notes in
+  [my base install notes](./BaseInstall.md) on removing `cloud-init`.
+
 - Tips:
   - Short device and connection list: `nmcli device` and `nmcli connection`
     (can also be abbreviated `nmcli d` and `nmcli c`); details via `nmcli c show <con-name>`
   - Documentation on NetworkManager settings: `man nm-settings` and <https://networkmanager.dev/docs/man-pages/>
   - `sudo nmtui` is a curses-based NetworkManager configuration tool that can do (almost) all of the above
     (it apparently doesn't support changing the `autoconnect` settings).
+  - In some cases, depending on the router, it may help to add `ipv6.disable=1` to `cmdline.txt` if IPv6 isn't needed.
 
 
 Making the RPi a NAT Access Point for its Ethernet
