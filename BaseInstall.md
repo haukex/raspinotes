@@ -315,6 +315,7 @@ Basic Setup
      when cloning SD cards. Therefore, it can be removed after it is no longer needed:
      - `sudo apt purge -y cloud-init && sudo apt autoremove -y`
      - `sudo rm -rvf /etc/cloud/ /var/lib/cloud/ /boot/firmware/{user-data,network-config}`
+     - There may also be files in `/etc/netplan` that cause automatic reconfigurations on reboot.
 
    - To add a Wi-Fi network later, either use `sudo nmtui`, or run `nmcli --ask device wifi connect <SSID>`
      (may need to first disconnect from Wi-Fi for the latter). Hint: `nmcli device wifi list`
@@ -372,7 +373,7 @@ spell: ignore elinks findtime ftpd hwclock journalctl lftp liblocal mailx maxret
 spell: ignore mydestination myhostname mysync nale nmcli nmtui noatime nodeadkeys nonint nopasswd
 spell: ignore ntpsec overlaycheck overlayed overlayfs overlayroot parenb polkit postip pyinotify sclk
 spell: ignore socat stty svnf timesyncd tofrodos tshark udplisten venv vimrc wireshark wlan zgrep
-spell: ignore raspberrypi cryptsetup libio -->
+spell: ignore raspberrypi cryptsetup libio netplan -->
 
 Author, Copyright, and License
 ------------------------------
