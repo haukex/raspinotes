@@ -341,7 +341,7 @@ Basic Setup
          for other commands use e.g. `sudo proxychains4 -q apt update` or `proxychains4 -q cpanm ...`
 
       4. If you have a Git repository on the RPi that you would like to push to, you can push to a non-bare
-         repository by doing this in the target repository: `git config receive.denyCurrentBranch updateInstead`
+         repository by doing this in the target repository: `git config --worktree receive.denyCurrentBranch updateInstead`
 
    - Sometimes, on some Wi-Fi nets, Wi-Fi will stop working unless I reboot the Pi once in a while.
      This can be done via e.g. `sudo -i crontab -e`: `0 8 * * * /sbin/shutdown --reboot +5 2>/dev/null`
@@ -373,7 +373,7 @@ spell: ignore elinks findtime ftpd hwclock journalctl lftp liblocal mailx maxret
 spell: ignore mydestination myhostname mysync nale nmcli nmtui noatime nodeadkeys nonint nopasswd
 spell: ignore ntpsec overlaycheck overlayed overlayfs overlayroot parenb polkit postip pyinotify sclk
 spell: ignore socat stty svnf timesyncd tofrodos tshark udplisten venv vimrc wireshark wlan zgrep
-spell: ignore raspberrypi cryptsetup libio netplan -->
+spell: ignore raspberrypi cryptsetup libio netplan worktree -->
 
 Author, Copyright, and License
 ------------------------------
