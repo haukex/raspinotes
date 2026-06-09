@@ -235,7 +235,65 @@ Basic Setup
 
    5. Enable (and disable) with `sudo dpkg-reconfigure --priority=low unattended-upgrades`
 
-8. **Overlay Filesystem** (*optional!*) Protecting the SD card against wear and sudden power-offs
+8. **Miscellaneous**
+
+   - To prevent waiting for network on boot: `sudo systemctl mask NetworkManager-wait-online.service`
+
+   - The RPi Imager is very useful in that it allows provisioning a headless RPi with networking and SSH set up,
+     but sometimes, `cloud-init`, which the RPi Imager uses, can get in the way of making modifications, e.g.
+     when cloning SD cards. Therefore, it can be removed after it is no longer needed:
+     - `sudo apt purge -y cloud-init && sudo apt autoremove -y`
+     - `sudo rm -rvf /etc/cloud/ /var/lib/cloud/ /boot/firmware/{user-data,network-config}`
+     - There may also be files in `/etc/netplan` that cause automatic reconfigurations on reboot.
+
+   - To add a Wi-Fi network later, either use `sudo nmtui`, or run `nmcli --ask device wifi connect <SSID>`
+     (may need to first disconnect from Wi-Fi for the latter). Hint: `nmcli device wifi list`
+
+   - Newer OSes generally have `systemd-timesyncd` installed, so `ntp` isn't really necessary anymore, but
+     in case it is: `sudo apt install --no-install-recommends ntp` and edit `/etc/ntpsec/ntp.conf` as appropriate.
+
+   - Newer versions of Debian/Raspbian use `journalctl` and `/var/log/syslog` doesn't exist by default anymore,
+      if you want to bring it back: `sudo apt install rsyslog`
+
+   - For RTC, e.g. DS3231 3.3V compatible breakout board: Wire up RTC as appropriate (3.3V, GND, SCL, SDA),
+     add `dtoverlay=i2c-rtc,ds3231` to `/boot/firmware/config.txt`, reboot,
+     and `sudo apt install util-linux-extra` for `hwclock` command, to test `sudo hwclock --test`
+
+   - If the Raspberry Pi doesn't have direct internet access after installation:
+
+      1. In `/etc/proxychains4.conf`, replace the default `socks4` line in the `[ProxyList]` section
+         with `socks5  127.0.0.1  12333`
+
+      2. When you connect to the RPi via SSH, use `ssh -R12333 pi@...`
+
+      3. Then, with commands that support it, you can use e.g. `ALL_PROXY=socks5h://localhost:12333 curl http://example.com`,
+         for other commands use e.g. `sudo proxychains4 -q apt update` or `proxychains4 -q cpanm ...`
+
+      4. If you have a Git repository on the RPi that you would like to push to, you can push to a non-bare
+         repository by doing this in the target repository: `git config --worktree receive.denyCurrentBranch updateInstead`
+
+   - Sometimes, on some Wi-Fi nets, Wi-Fi will stop working unless I reboot the Pi once in a while.
+     This can be done via e.g. `sudo -i crontab -e`: `0 8 * * * /sbin/shutdown --reboot +5 2>/dev/null`
+
+   - Serial port hints:
+     - `sudo adduser $USER dialout`
+     - `stty -F /dev/ttyS0 19200 cs8 -parenb raw -crtscts -echo` and `cat /dev/ttyS0`
+     - `minicom -D/dev/ttyS0`
+     - `screen /dev/ttyS0 19200`
+
+   - Though the following is a **security risk**, it may be acceptable in certain limited circumstances,
+     such as devices not connected to a network. To prevent being prompted for a password when doing
+     administrative tasks (esp. in the GUI):
+
+         cat <<'EOF' | sudo tee /etc/polkit-1/rules.d/49-sudo-nopasswd.rules
+         polkit.addRule(function(action, subject) {
+            if (subject.isInGroup("sudo")) {
+               return polkit.Result.YES;
+            }
+         });
+         EOF
+
+9. **Overlay Filesystem** (*optional!*) Protecting the SD card against wear and sudden power-offs
    by making root FS read-only ("overlay filesystem") with a writable data partition.
 
    0. Assuming you didn't do this before first boot (see the earlier notes on that), power down the RPi,
@@ -305,64 +363,6 @@ Basic Setup
       - To get the current status,
         `for x in get_overlay_conf get_bootro_conf get_overlay_now get_bootro_now; do echo -n "$x="; sudo raspi-config nonint $x; done`
         where 1=false and 0=true (*NIX process exit codes)
-
-9. **Miscellaneous**
-
-   - To prevent waiting for network on boot: `sudo systemctl mask NetworkManager-wait-online.service`
-
-   - The RPi Imager is very useful in that it allows provisioning a headless RPi with networking and SSH set up,
-     but sometimes, `cloud-init`, which the RPi Imager uses, can get in the way of making modifications, e.g.
-     when cloning SD cards. Therefore, it can be removed after it is no longer needed:
-     - `sudo apt purge -y cloud-init && sudo apt autoremove -y`
-     - `sudo rm -rvf /etc/cloud/ /var/lib/cloud/ /boot/firmware/{user-data,network-config}`
-     - There may also be files in `/etc/netplan` that cause automatic reconfigurations on reboot.
-
-   - To add a Wi-Fi network later, either use `sudo nmtui`, or run `nmcli --ask device wifi connect <SSID>`
-     (may need to first disconnect from Wi-Fi for the latter). Hint: `nmcli device wifi list`
-
-   - Newer OSes generally have `systemd-timesyncd` installed, so `ntp` isn't really necessary anymore, but
-     in case it is: `sudo apt install --no-install-recommends ntp` and edit `/etc/ntpsec/ntp.conf` as appropriate.
-
-   - Newer versions of Debian/Raspbian use `journalctl` and `/var/log/syslog` doesn't exist by default anymore,
-      if you want to bring it back: `sudo apt install rsyslog`
-
-   - For RTC, e.g. DS3231 3.3V compatible breakout board: Wire up RTC as appropriate (3.3V, GND, SCL, SDA),
-     add `dtoverlay=i2c-rtc,ds3231` to `/boot/firmware/config.txt`, reboot,
-     and `sudo apt install util-linux-extra` for `hwclock` command, to test `sudo hwclock --test`
-
-   - If the Raspberry Pi doesn't have direct internet access after installation:
-
-      1. In `/etc/proxychains4.conf`, replace the default `socks4` line in the `[ProxyList]` section
-         with `socks5  127.0.0.1  12333`
-
-      2. When you connect to the RPi via SSH, use `ssh -R12333 pi@...`
-
-      3. Then, with commands that support it, you can use e.g. `ALL_PROXY=socks5h://localhost:12333 curl http://example.com`,
-         for other commands use e.g. `sudo proxychains4 -q apt update` or `proxychains4 -q cpanm ...`
-
-      4. If you have a Git repository on the RPi that you would like to push to, you can push to a non-bare
-         repository by doing this in the target repository: `git config --worktree receive.denyCurrentBranch updateInstead`
-
-   - Sometimes, on some Wi-Fi nets, Wi-Fi will stop working unless I reboot the Pi once in a while.
-     This can be done via e.g. `sudo -i crontab -e`: `0 8 * * * /sbin/shutdown --reboot +5 2>/dev/null`
-
-   - Serial port hints:
-     - `sudo adduser $USER dialout`
-     - `stty -F /dev/ttyS0 19200 cs8 -parenb raw -crtscts -echo` and `cat /dev/ttyS0`
-     - `minicom -D/dev/ttyS0`
-     - `screen /dev/ttyS0 19200`
-
-   - Though the following is a **security risk**, it may be acceptable in certain limited circumstances,
-     such as devices not connected to a network. To prevent being prompted for a password when doing
-     administrative tasks (esp. in the GUI):
-
-         cat <<'EOF' | sudo tee /etc/polkit-1/rules.d/49-sudo-nopasswd.rules
-         polkit.addRule(function(action, subject) {
-            if (subject.isInGroup("sudo")) {
-               return polkit.Result.YES;
-            }
-         });
-         EOF
 
 
 
