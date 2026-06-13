@@ -17,9 +17,9 @@ These instructions assume you have knowledge of using a Raspberry Pi and Debian 
    - Raspberry Pi OS Lite 64-bit 2025-05-13 (bookworm)
    - Raspberry Pi Imager v1.9.6
    - Raspberry Pi Zero 2 W
-- November 2025 (not all sections below tested!) with
-   - Raspberry Pi OS Lite 32-bit 2025-11-24 (trixie)
-   - Raspberry Pi Imager v2.0.1
+- June 2026 (not all sections below tested!) with
+   - Raspberry Pi OS Lite 32-bit 2026-04-21 (trixie)
+   - Raspberry Pi Imager v2.0.7
    - Raspberry Pi Zero W
 
 Basic Setup
@@ -112,10 +112,10 @@ Basic Setup
          edit `/etc/default/keyboard` and set e.g. `XKBLAYOUT="de"` and `XKBVARIANT="nodeadkeys"`
          (or perhaps `XKBLAYOUT="us,de"` and `XKBVARIANT=",nodeadkeys"` with `XKBOPTIONS="grp:sclk_toggle,grp_led:scroll"`)
 
-   3. `sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y && echo Done`
+   3. `sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y --purge && echo Done`
       (reboot afterward is usually necessary)
 
-   4. `sudo apt install --no-install-recommends aptitude ufw vim git screen moreutils minicom socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl libio-socket-ssl-perl perl-doc python3-pip python3-venv python3-dev overlayroot`
+   4. `sudo apt install --no-install-recommends aptitude ufw vim git git-lfs screen moreutils minicom socat lsof tshark dnsutils elinks lftp jq zip tofrodos proxychains4 build-essential cpanminus liblocal-lib-perl libio-socket-ssl-perl perl-doc python3-pip python3-venv python3-dev overlayroot`
       - These are my preferred tools on top of the Lite edition, you may of course modify this list as you like
       - Note: The installation of `tshark` will ask whether non-superusers should be able to capture packets, I usually say yes
       - Note: The following packages were already installed on the Lite edition last time I checked: `zip build-essential python3-venv`
@@ -126,7 +126,7 @@ Basic Setup
 
       - `sudo vi /etc/ssh/sshd_config` and set `PermitRootLogin no`, `PasswordAuthentication no`, and `KbdInteractiveAuthentication no`
       - `sudo adduser $USER wireshark`
-      - `perl -Mlocal::lib >>~/.profile`
+      - `perl -Mlocal::lib | tee -a ~/.profile`
       - Set up any files like `.bash_aliases`, `.vimrc`, etc.
          - My own "dotfiles" repo: `mkdir -vp ~/code && git clone https://github.com/haukex/dotfiles.git ~/code/dotfiles && echo "~/code/dotfiles" >>~/.git-mysync && ~/code/dotfiles/bootstrap.sh`
 
@@ -242,9 +242,10 @@ Basic Setup
    - The RPi Imager is very useful in that it allows provisioning a headless RPi with networking and SSH set up,
      but sometimes, `cloud-init`, which the RPi Imager uses, can get in the way of making modifications, e.g.
      when cloning SD cards. Therefore, it can be removed after it is no longer needed:
-     - `sudo apt purge -y cloud-init && sudo apt autoremove -y`
-     - `sudo rm -rvf /etc/cloud/ /var/lib/cloud/ /boot/firmware/{user-data,network-config}`
-     - There may also be files in `/etc/netplan` that cause automatic reconfigurations on reboot.
+     - `sudo apt purge -y cloud-init && sudo apt autoremove -y --purge`
+     - `sudo rm -rvf /etc/cloud/ /var/lib/cloud/ /boot/firmware/{user-data,network-config} /etc/netplan/*`
+     - **Note** that this may remove existing WiFi network connections; you should check this after doing the above;
+       also after the next reboot you may need to connect to the RPi directly instead of over the network.
 
    - To add a Wi-Fi network later, either use `sudo nmtui`, or run `nmcli --ask device wifi connect <SSID>`
      (may need to first disconnect from Wi-Fi for the latter). Hint: `nmcli device wifi list`
@@ -281,7 +282,7 @@ Basic Setup
      - `minicom -D/dev/ttyS0`
      - `screen /dev/ttyS0 19200`
 
-   - Though the following is a **security risk**, it may be acceptable in certain limited circumstances,
+   - Though the following is a **security risk ⚠️**, it may be acceptable in certain limited circumstances,
      such as devices not connected to a network. To prevent being prompted for a password when doing
      administrative tasks (esp. in the GUI):
 
@@ -292,6 +293,8 @@ Basic Setup
             }
          });
          EOF
+
+     You can also disable the `sudo` password request via `raspi-config` in the "System Options".
 
 9. **Overlay Filesystem** (*optional!*) Protecting the SD card against wear and sudden power-offs
    by making root FS read-only ("overlay filesystem") with a writable data partition.
@@ -378,7 +381,7 @@ spell: ignore raspberrypi cryptsetup libio netplan worktree -->
 Author, Copyright, and License
 ------------------------------
 
-Copyright (c) 2016-2025 Hauke Dämpfling <haukex@zero-g.net>
+Copyright (c) 2016-2026 Hauke Dämpfling <haukex@zero-g.net>
 at the Leibniz Institute of Freshwater Ecology and Inland Fisheries (IGB),
 Berlin, Germany, <https://www.igb-berlin.de/>
 

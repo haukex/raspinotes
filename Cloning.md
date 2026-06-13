@@ -22,6 +22,8 @@ holding the data.
 
 - Remove `cloud-init` as per my [BaseInstall notes](./BaseInstall.md).
 
+- See the section [Optional Cleanups](#optional-cleanups) below.
+
 In the following, replace `/dev/sdX` with the source SD card's device name.
 
 - Partition table:
@@ -43,7 +45,7 @@ In the following, replace `/dev/sdX` with the source SD card's device name.
 
 - Adjust permissions on image files:
   - `sudo chown -c $USER:$USER *.img`
-  - `chmod -c 440 *.img part_table`
+  - `chmod -c 440 *.img part_table*`
 
 - If you want to back up these files into one:
   `tar --create --file rpi-images.sparse.tgz -I 'gzip -9' --verbose --sparse -- part_table *.img`
@@ -123,6 +125,24 @@ Post-Boot Updates on Clone
   (`sudo raspi-config nonint do_overlayfs 0`).
 
 
+Optional Cleanups
+-----------------
+
+For use *before* cloning the system.
+
+- `sudo apt-get autoremove -y --purge` (removes unused dependencies)
+- `sudo apt-get clean` (cleans `.deb` cache in `/var/cache/apt/`; note
+  the next `apt` run may recreate some files, so do this last)
+- `sudo rm -rf /var/lib/apt/lists/*` (removes apt package index;
+  but you'll need `sudo apt update` to get them back)
+- `python -m pip cache purge`
+- `npm cache clean --force && rm -rf ~/.npm/_logs` (if `npm` is installed)
+- `sudo rm -rf /var/log/apt/* /var/log/dpkg.log /var/log/alternatives.log /var/log/fontconfig.log`
+  (remove misc. logs; commonly used in Dockerfiles)
+- `sudo journalctl --vacuum-time=7d`
+- `rm ~/.bash_history` (though the current session's history will still be saved)
+
+
 More Information
 ----------------
 
@@ -131,12 +151,12 @@ More Information
 
 
 <!-- spell: ignore PARTUUID blkid cmdline dhcpcd dpkg firstboot sfdisk zcat snakeoil fatlabel bootfs
-spell: ignore rootfs Imager autoremove partclone nonint overlayfs raspi -->
+spell: ignore rootfs Imager autoremove partclone nonint overlayfs raspi fontconfig Dockerfiles journalctl -->
 
 Author, Copyright, and License
 ------------------------------
 
-Copyright (c) 2025 Hauke Dämpfling <haukex@zero-g.net>
+Copyright (c) 2025-2026 Hauke Dämpfling <haukex@zero-g.net>
 at the Leibniz Institute of Freshwater Ecology and Inland Fisheries (IGB),
 Berlin, Germany, <https://www.igb-berlin.de/>
 
