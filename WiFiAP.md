@@ -1,12 +1,10 @@
 Raspberry Pi as Wi-Fi Access Point
 ==================================
 
-**Important:** Do this *last*, because installing stuff via reverse proxy
-can be a bit of a pain!
+**Important:** Do this *last*, because installing stuff via reverse proxy can be a bit of a pain!
 
-The following instructions were updated Dec 2023 based on the
-current [official RPi documentation on the topic][link1]
-and tested on the new Bookworm-based Raspberry Pi OS Lite.
+The following instructions were based on the [official RPi documentation on the topic][link1] (as
+of Dec 2023) and tested to be working (as of June 2026) on the Trixie-based Raspberry Pi OS Lite.
 
 [link1]: https://www.raspberrypi.com/documentation/computers/configuration.html#host-a-wireless-network-on-your-raspberry-pi
 
@@ -15,12 +13,25 @@ and tested on the new Bookworm-based Raspberry Pi OS Lite.
       sudo ufw allow DNS
       sudo ufw allow from any port 68 to any port 67 proto udp comment DHCP
 
-- To set up and enable the WiFi AP, do the following. (Note: if you're currently connected to the RPi
-  via WiFi, the first command will immediately start up the AP and kill your connection.)
+- To set up and enable the WiFi AP, do the following. **Note:** If you're currently connected to
+  the RPi via WiFi, the first command will immediately try to start up the AP and kill your
+  connection, so you'll probably want to do the following via a console.
 
       sudo nmcli device wifi hotspot con-name Hotspot ssid <SSID> password <Password>
-      sudo nmcli connection modify Hotspot ipv4.addresses 192.168.42.1/24 \
-          autoconnect TRUE connection.autoconnect-priority 1
+      sudo nmcli connection modify Hotspot ipv4.method shared ipv4.may-fail no \
+        ipv4.addresses 192.168.42.1/24 ipv6.method disabled \
+        autoconnect TRUE connection.autoconnect-priority 1
+      sudo systemctl restart NetworkManager
+
+- On the Raspberry Pi Zero W, I've had issues with the network connection not activating; the
+  following fixed it:
+
+      sudo nmcli connection modify Hotspot \
+        802-11-wireless-security.pmf 1 \
+        802-11-wireless-security.proto "" \
+        802-11-wireless-security.pairwise "" \
+        802-11-wireless-security.group ""
+      sudo nmcli c down Hotspot
       sudo systemctl restart NetworkManager
 
 - If you keep the WiFi client connection you had previously, and you want to switch back to that:
@@ -29,19 +40,28 @@ and tested on the new Bookworm-based Raspberry Pi OS Lite.
       sudo nmcli connection down Hotspot
 
   If you don't want to keep the client connection, then you can simply delete it,
-  and the above `autoconnect-priority` settings are not needed.
+  and the above `autoconnect-priority` setting on the hotspot is not needed.
 
 - If there are files in `/etc/netplan` that cause connections to be reconfigured on every reboot,
-  read them first to check, but it is usually safe to delete them. Also, see the notes in
+  read them first to check, but it is usually safe to delete them. See also the notes in
   [my base install notes](./BaseInstall.md) on removing `cloud-init`.
+
+- I've noticed that sometimes, some of the commands to modify the network connection reset the PSK.
+  To check and fix:
+
+      sudo nmcli c show --show-secrets Hotspot | grep psk
+      # And in case the password has been reset:
+      sudo nmcli c modify Hotspot 802-11-wireless-security.psk '<Password>'
 
 - Tips:
   - Short device and connection list: `nmcli device` and `nmcli connection`
     (can also be abbreviated `nmcli d` and `nmcli c`); details via `nmcli c show <con-name>`
-  - Documentation on NetworkManager settings: `man nm-settings` and <https://networkmanager.dev/docs/man-pages/>
-  - `sudo nmtui` is a curses-based NetworkManager configuration tool that can do (almost) all of the above
-    (it apparently doesn't support changing the `autoconnect` settings).
-  - In some cases, depending on the router, it may help to add `ipv6.disable=1` to `cmdline.txt` if IPv6 isn't needed.
+  - Documentation on NetworkManager settings: `man nm-settings`
+    and <https://networkmanager.dev/docs/man-pages/>
+  - `sudo nmtui` is a curses-based NetworkManager configuration tool that can do (almost) all of
+    the above (it apparently doesn't support changing the `autoconnect` settings).
+  - In some cases, depending on the router, it may help to add `ipv6.disable=1` to `cmdline.txt`
+    if IPv6 isn't needed.
 
 
 Making the RPi a NAT Access Point for its Ethernet
@@ -141,6 +161,9 @@ First do:
 
 And then use `uap0` instead of `wlan0` in the instructions above.
 
+
+<!-- spell: ignore wlan CCMP Hotspot TKIP Trixie YOURHOSTNAME algs cmdline dhcpcd dnsmasq hostapd
+spell: ignore iifname macaddr mgmt netplan nftables nmcli nmtui nohook oifname postrouting -->
 
 Author, Copyright, and License
 ------------------------------
